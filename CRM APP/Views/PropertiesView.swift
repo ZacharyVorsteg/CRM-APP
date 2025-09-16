@@ -260,7 +260,7 @@ private struct PropertyRowView: View {
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("$\(property.askingRate, specifier: "%.2f")/SF")
+                    Text("$\(Double(truncating: property.askingRate as NSNumber), specifier: "%.2f")/SF")
                         .font(.footnote)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -296,8 +296,9 @@ private struct PropertyRowView: View {
     private var statusColor: Color {
         switch property.status {
         case .available: return .green
-        case .pending: return .orange
+        case .underLOI: return .orange
         case .leased: return .red
+        case .offMarket: return .gray
         }
     }
 }
