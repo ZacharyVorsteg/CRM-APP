@@ -1,0 +1,342 @@
+//
+//  PropertiesView.swift
+//  CRM APP
+//
+//  Created by Zach Thomas on 9/16/25.
+//
+
+import SwiftUI
+
+struct PropertiesView: View {
+    @EnvironmentObject var dataManager: DataManager
+    @State private var showingAddProperty = false
+    @State private var selectedProperty: Property?
+    @State private var searchText = ""
+    @State private var showingFilters = false
+    @State private var sizeFilter: SizeRange = .all
+    @State private var clearHeightFilter: ClearHeightRange = .all
+    @State private var railAccessOnly = false
+    @State private var sortBy: PropertySort = .dateAdded
+    
+    enum SizeRange: String, CaseIterable {
+        case all = "All Sizes"
+        case small = "< 25K SF"
+        case medium = "25K - 50K SF"
+        case large = "50K - 100K SF"
+        case xlarge = "> 100K SF"
+    }
+    
+    enum ClearHeightRange: String, CaseIterable {
+        case all = "All Heights"
+        case low = "< 24'"
+        case medium = "24' - 32'"
+        case high = "> 32'"
+    }
+    
+    enum PropertySort: String, CaseIterable {
+        case dateAdded = "Date Added"
+        case size = "Size"
+        case rate = "Rate"
+        case daysOnMarket = "Days on Market"
+    }
+    
+    var filteredProperties: [Property] {
+        var filtered = dataManager.properties
+        
+        // Text search
+        if !searchText.isEmpty {
+            filtered = filtered.filter {
+                $0.address.localizedCaseInsensitiveContains(searchText) ||
+                $0.city.localizedCaseInsensitiveContains(searchText) ||
+                $0.zipCode.localizedCaseInsensitiveContains(searchText) ||
+                $0.zoning.rawValue.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+        
+        // Size filter
+        switch sizeFilter {
+        case .small:
+            filtered = filtered.filter { $0.squareFootage < 25000 }
+        case .medium:
+            filtered = filtered.filter { $0.squareFootage >= 25000 && $0.squareFootage < 50000 }
+        case .large:
+            filtered = filtered.filter { $0.squareFootage >= 50000 && $0.squareFootage < 100000 }
+        case .xlarge:
+            filtered = filtered.filter { $0.squareFootage >= 100000 }
+        case .all:
+            break
+        }
+        
+        // Clear height filter
+        switch clearHeightFilter {
+        case .low:
+            filtered = filtered.filter { $0.clearHeight < 24 }
+        case .medium:
+            filtered = filtered.filter { $0.clearHeight >= 24 && $0.clearHeight <= 32 }
+        case .high:
+            filtered = filtered.filter { $0.clearHeight > 32 }
+        case .all:
+            break
+        }
+        
+        // Rail access filter
+        if railAccessOnly {
+            filtered = filtered.filter { $0.railAccess }
+        }
+        
+        // Sort
+        switch sortBy {
+        case .dateAdded:
+            filtered = filtered.sorted { $0.dateAdded > $1.dateAdded }
+        case .size:
+            filtered = filtered.sorted { $0.squareFootage > $1.squareFootage }
+        case .rate:
+            filtered = filtered.sorted { $0.askingRate < $1.askingRate }
+        case .daysOnMarket:
+            filtered = filtered.sorted { $0.daysOnMarket > $1.daysOnMarket }
+        }
+        
+        return filtered
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Search Bar
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 16))
+                    
+                    TextField("Search warehouses...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(.subheadline)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                
+                // Properties List
+                if filteredProperties.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "house")
+                            .font(.system(size: 60))
+                            .foregroundColor(.secondary)
+                        
+                        Text(searchText.isEmpty ? "No properties yet" : "No properties found")
+                            .font(.title2)
+                            .fontWeight(.medium)
+                        
+                        Text(searchText.isEmpty ? "Add your first property to start managing listings" : "Try adjusting your search terms")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        if searchText.isEmpty {
+                            Button("Add Property") {
+                                showingAddProperty = true
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemBackground))
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(filteredProperties) { property in
+                                PropertyRowView(property: property)
+                                    .onTapGesture {
+                                        selectedProperty = property
+                                    }
+                                    .contextMenu {
+                                        Button("Edit") {
+                                            selectedProperty = property
+                                        }
+                                        
+                                        Button("Delete", role: .destructive) {
+                                            dataManager.deleteProperty(property)
+                                        }
+                                    }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                    }
+                }
+            }
+            .navigationTitle("Warehouses")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { showingFilters = true }) {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showingAddProperty = true }) {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingFilters) {
+                PropertyFiltersView(
+                    sizeFilter: $sizeFilter,
+                    clearHeightFilter: $clearHeightFilter,
+                    railAccessOnly: $railAccessOnly,
+                    sortBy: $sortBy
+                )
+            }
+            .sheet(isPresented: $showingAddProperty) {
+                AddEditPropertyView(property: nil)
+            }
+            .sheet(item: $selectedProperty) { property in
+                AddEditPropertyView(property: property)
+            }
+        }
+    }
+    
+}
+
+struct PropertyRowView: View {
+    let property: Property
+    
+    var body: some View {
+        VStack(spacing: 14) {
+            // Header Row
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(property.address)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .lineLimit(1)
+                    
+                    Text("\(property.city), \(property.state)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(property.status.rawValue)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(statusColor(for: property.status))
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                    
+                    Text("\(property.daysOnMarket) days")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Specs Row
+            HStack {
+                HStack(spacing: 20) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("SIZE")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
+                        Text(property.formattedSquareFootage)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.blue)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("HEIGHT")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
+                        Text(property.formattedClearHeight)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.orange)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("DOCKS")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
+                        Text("\(property.loadingDocks)")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.purple)
+                    }
+                    
+                    if property.railAccess {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("RAIL")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .fontWeight(.medium)
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(property.askingRate, format: .currency(code: "USD").precision(.fractionLength(2)))
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.green)
+                    
+                    Text("per SF/Year")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Zoning and Availability
+            HStack {
+                Text(property.zoning.rawValue)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.gray.opacity(0.15))
+                    .cornerRadius(6)
+                
+                Spacer()
+                
+                Text("Available: \(property.availableDate.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(16)
+        .background(Color(.systemBackground))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray4), lineWidth: 1)
+        )
+        .cornerRadius(12)
+    }
+    
+    private func statusColor(for status: PropertyStatus) -> Color {
+        switch status {
+        case .available: return .green
+        case .underLOI: return .orange
+        case .leased: return .blue
+        case .offMarket: return .red
+        }
+    }
+}
+
+#Preview {
+    PropertiesView()
+        .environmentObject(DataManager.shared)
+}

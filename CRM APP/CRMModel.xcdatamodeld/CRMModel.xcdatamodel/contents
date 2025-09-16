@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22758" systemVersion="23F79" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="CDCommunication" representedClassName="CDCommunication" syncable="YES" codeGenerationType="class">
+        <attribute name="content" optional="YES" attributeType="String"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isOutgoing" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="subject" optional="YES" attributeType="String"/>
+        <attribute name="type" optional="YES" attributeType="String"/>
+        <relationship name="lead" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDLead" inverseName="communications" inverseEntity="CDLead"/>
+    </entity>
+    <entity name="CDDeal" representedClassName="CDDeal" syncable="YES" codeGenerationType="class">
+        <attribute name="actualCloseDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="annualEscalation" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="baseRent" optional="YES" attributeType="Decimal" defaultValueString="0.0"/>
+        <attribute name="commissionStructure" optional="YES" attributeType="String"/>
+        <attribute name="dateCreated" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="expectedCloseDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="freeRentMonths" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="lastUpdated" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="leaseType" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="optionToExtend" optional="YES" attributeType="String"/>
+        <attribute name="probability" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="stage" optional="YES" attributeType="String"/>
+        <attribute name="termLength" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="tiAllowance" optional="YES" attributeType="Decimal" defaultValueString="0.0"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <attribute name="totalAnnualValue" optional="YES" attributeType="Decimal" defaultValueString="0.0"/>
+        <attribute name="value" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="lead" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDLead" inverseName="deals" inverseEntity="CDLead"/>
+        <relationship name="property" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDProperty" inverseName="deals" inverseEntity="CDProperty"/>
+    </entity>
+    <entity name="CDLead" representedClassName="CDLead" syncable="YES" codeGenerationType="class">
+        <attribute name="annualThroughput" optional="YES" attributeType="String"/>
+        <attribute name="businessType" optional="YES" attributeType="String"/>
+        <attribute name="currentFacilitySize" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="dateCreated" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="email" optional="YES" attributeType="String"/>
+        <attribute name="estimatedValue" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="expansionTimeline" optional="YES" attributeType="String"/>
+        <attribute name="firstName" optional="YES" attributeType="String"/>
+        <attribute name="fleetSize" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="lastContactDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastName" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="phone" optional="YES" attributeType="String"/>
+        <attribute name="propertyAddress" optional="YES" attributeType="String"/>
+        <attribute name="requiredSquareFootage" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="shift24Hour" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="source" optional="YES" attributeType="String"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <attribute name="targetMoveDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="temperatureRequirements" optional="YES" attributeType="String"/>
+        <relationship name="communications" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CDCommunication" inverseName="lead" inverseEntity="CDCommunication"/>
+        <relationship name="deals" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CDDeal" inverseName="lead" inverseEntity="CDDeal"/>
+    </entity>
+    <entity name="CDProperty" representedClassName="CDProperty" syncable="YES" codeGenerationType="class">
+        <attribute name="address" optional="YES" attributeType="String"/>
+        <attribute name="askingRate" optional="YES" attributeType="Decimal" defaultValueString="0.0"/>
+        <attribute name="availableDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="ceilingType" optional="YES" attributeType="String"/>
+        <attribute name="city" optional="YES" attributeType="String"/>
+        <attribute name="clearHeight" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="columnSpacing" optional="YES" attributeType="String"/>
+        <attribute name="craneCapacity" optional="YES" attributeType="String"/>
+        <attribute name="dateAdded" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="descriptionText" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="loadingDocks" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="officeSquareFootage" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="powerCapacity" optional="YES" attributeType="String"/>
+        <attribute name="railAccess" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="sprinklerSystem" optional="YES" attributeType="String"/>
+        <attribute name="squareFootage" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="state" optional="YES" attributeType="String"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <attribute name="truckCourtDepth" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="yardSize" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="yearBuilt" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="zipCode" optional="YES" attributeType="String"/>
+        <attribute name="zoning" optional="YES" attributeType="String"/>
+        <relationship name="deals" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CDDeal" inverseName="property" inverseEntity="CDDeal"/>
+    </entity>
+</model>
