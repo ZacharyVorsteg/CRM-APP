@@ -48,30 +48,12 @@ struct DealsView: View {
                 
                 // Deals List
                 if filteredDeals.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "dollarsign.circle")
-                            .font(.system(size: 60))
-                            .foregroundColor(.secondary)
-                        
-                        Text(dataManager.deals.isEmpty ? "No deals yet" : "No deals in this stage")
-                            .font(.title2)
-                            .fontWeight(.medium)
-                        
-                        Text(dataManager.deals.isEmpty ? "Create your first deal to start tracking your pipeline" : "Try selecting a different stage filter")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                        
-                        if dataManager.deals.isEmpty {
-                            Button("Add Deal") {
-                                showingAddDeal = true
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                    }
+                    EmptyLeasesState(
+                        hasFilter: selectedStage != nil,
+                        hasAnyDeals: !dataManager.deals.isEmpty,
+                        onAddDeal: { showingAddDeal = true }
+                    )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemBackground))
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
@@ -97,6 +79,7 @@ struct DealsView: View {
                 }
             }
             .navigationTitle("Leases")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddDeal = true }) {
@@ -121,6 +104,61 @@ struct DealsView: View {
         }
     }
     
+}
+
+// MARK: - Empty State
+private struct EmptyLeasesState: View {
+    let hasFilter: Bool
+    let hasAnyDeals: Bool
+    let onAddDeal: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "doc.text")
+                .font(.system(size: 60))
+                .foregroundColor(.secondary)
+            
+            Text(getEmptyTitle())
+                .font(.title2)
+                .fontWeight(.medium)
+            
+            Text(getEmptyMessage())
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            if !hasAnyDeals {
+                Button("Add Lease") {
+                    onAddDeal()
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityHint("Creates a new lease deal")
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(getEmptyTitle())
+    }
+    
+    private func getEmptyTitle() -> String {
+        if hasFilter {
+            return "No leases in this stage"
+        } else if hasAnyDeals {
+            return "No leases match filters"
+        } else {
+            return "No leases yet"
+        }
+    }
+    
+    private func getEmptyMessage() -> String {
+        if hasFilter {
+            return "Try selecting a different stage filter"
+        } else if hasAnyDeals {
+            return "Adjust your filters to see more results"
+        } else {
+            return "Create your first lease to start tracking your pipeline"
+        }
+    }
 }
 
 struct StageFilterButton: View {

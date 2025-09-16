@@ -7,21 +7,27 @@
 
 import SwiftUI
 import UIKit
+import Combine
 
 struct LeadsView: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var showingAddLead = false
     @State private var searchText = ""
+    @State private var debouncedSearchText = ""
+    @State private var searchCancellable: AnyCancellable?
     
     var filteredLeads: [Lead] {
-        if searchText.isEmpty {
-            return dataManager.leads
+        let searchTerm = debouncedSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if searchTerm.isEmpty {
+            return dataManager.leads.sorted { $0.dateCreated > $1.dateCreated }
         } else {
             return dataManager.leads.filter {
-                $0.fullName.localizedCaseInsensitiveContains(searchText) ||
-                $0.email.localizedCaseInsensitiveContains(searchText) ||
-                $0.phone.localizedCaseInsensitiveContains(searchText)
-            }
+                $0.fullName.localizedCaseInsensitiveContains(searchTerm) ||
+                $0.email.localizedCaseInsensitiveContains(searchTerm) ||
+                $0.phone.localizedCaseInsensitiveContains(searchTerm) ||
+                $0.businessType.rawValue.localizedCaseInsensitiveContains(searchTerm)
+            }.sorted { $0.dateCreated > $1.dateCreated }
         }
     }
     
@@ -34,30 +40,11 @@ struct LeadsView: View {
                 
                 // Leads List
                 if filteredLeads.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "person.3")
-                            .font(.system(size: 60))
-                            .foregroundColor(.secondary)
-                        
-                        Text(searchText.isEmpty ? "No leads yet" : "No leads found")
-                            .font(.title2)
-                            .fontWeight(.medium)
-                        
-                        Text(searchText.isEmpty ? "Add your first lead to get started with your CRM" : "Try adjusting your search terms")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                        
-                        if searchText.isEmpty {
-                            Button("Add Lead") {
-                                showingAddLead = true
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                    }
+                    EmptyProspectsState(
+                        hasSearchTerm: !debouncedSearchText.isEmpty,
+                        onAddProspect: { showingAddLead = true }
+                    )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemBackground))
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
@@ -91,6 +78,10 @@ struct LeadsView: View {
                 }
             }
             .navigationTitle("Prospects")
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                setupSearchDebouncing()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddLead = true }) {
@@ -172,6 +163,49 @@ struct LeadsView: View {
     private func hapticFeedback() {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
+    }
+    
+    // MARK: - Search Debouncing
+    private func setupSearchDebouncing() {
+        searchCancellable = $searchText
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .sink { newValue in
+                debouncedSearchText = newValue
+            }
+    }
+}
+
+// MARK: - Empty State
+private struct EmptyProspectsState: View {
+    let hasSearchTerm: Bool
+    let onAddProspect: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "person.3")
+                .font(.system(size: 60))
+                .foregroundColor(.secondary)
+            
+            Text(hasSearchTerm ? "No matches found" : "No prospects yet")
+                .font(.title2)
+                .fontWeight(.medium)
+            
+            Text(hasSearchTerm ? "Try adjusting your search terms" : "Add your first prospect to get started")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            if !hasSearchTerm {
+                Button("Add Prospect") {
+                    onAddProspect()
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityHint("Creates a new prospect entry")
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(hasSearchTerm ? "No search results found" : "No prospects available")
     }
 }
 

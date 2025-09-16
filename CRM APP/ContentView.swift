@@ -40,6 +40,7 @@ struct ContentView: View {
                     }
             }
             .environmentObject(dataManager)
+            .tint(.accentColor)
             
             // Floating Action Button
             VStack {

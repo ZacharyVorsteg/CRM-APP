@@ -121,30 +121,11 @@ struct PropertiesView: View {
                 
                 // Properties List
                 if filteredProperties.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "house")
-                            .font(.system(size: 60))
-                            .foregroundColor(.secondary)
-                        
-                        Text(searchText.isEmpty ? "No properties yet" : "No properties found")
-                            .font(.title2)
-                            .fontWeight(.medium)
-                        
-                        Text(searchText.isEmpty ? "Add your first property to start managing listings" : "Try adjusting your search terms")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                        
-                        if searchText.isEmpty {
-                            Button("Add Property") {
-                                showingAddProperty = true
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                    }
+                    EmptyWarehousesState(
+                        hasSearchTerm: !searchText.isEmpty,
+                        onAddProperty: { showingAddProperty = true }
+                    )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemBackground))
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
@@ -170,6 +151,7 @@ struct PropertiesView: View {
                 }
             }
             .navigationTitle("Warehouses")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { showingFilters = true }) {
@@ -199,7 +181,40 @@ struct PropertiesView: View {
             }
         }
     }
+}
+
+// MARK: - Empty State
+private struct EmptyWarehousesState: View {
+    let hasSearchTerm: Bool
+    let onAddProperty: () -> Void
     
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "building.2")
+                .font(.system(size: 60))
+                .foregroundColor(.secondary)
+            
+            Text(hasSearchTerm ? "No warehouses found" : "No warehouses yet")
+                .font(.title2)
+                .fontWeight(.medium)
+            
+            Text(hasSearchTerm ? "Try different search terms or filters" : "Add your first warehouse to start managing inventory")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            if !hasSearchTerm {
+                Button("Add Warehouse") {
+                    onAddProperty()
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityHint("Creates a new warehouse listing")
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(hasSearchTerm ? "No warehouse search results" : "No warehouses available")
+    }
 }
 
 struct PropertyRowView: View {

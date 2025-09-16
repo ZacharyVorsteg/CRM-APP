@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import CoreData
+import os.log
 
 class DataManager: ObservableObject {
     static let shared = DataManager()
@@ -22,27 +23,35 @@ class DataManager: ObservableObject {
         return coreDataStack.context
     }
     
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "CRM", category: "CoreData")
+    
     private init() {
         loadData()
     }
     
+    // MARK: - Core Data Safety
+    private func saveIfNeeded() {
+        guard context.hasChanges else { return }
+        
+        do {
+            try context.save()
+            logger.info("✅ Core Data saved successfully")
+        } catch {
+            logger.error("❌ Core Data save failed: \(error.localizedDescription)")
+        }
+    }
+    
     // MARK: - Lead Management
     func addLead(_ lead: Lead) {
-        print("📝 Adding lead: \(lead.fullName)")
+        logger.info("📝 Adding lead: \(lead.fullName)")
         
         let cdLead = CDLead(context: context)
         cdLead.updateFromLead(lead)
         
-        do {
-            try context.save()
-            print("✅ Lead saved successfully")
-            
-            // Reload data on main thread
-            DispatchQueue.main.async {
-                self.loadLeads()
-            }
-        } catch {
-            print("❌ Error saving lead: \(error)")
+        saveIfNeeded()
+        
+        DispatchQueue.main.async {
+            self.loadLeads()
         }
     }
     
@@ -52,8 +61,10 @@ class DataManager: ObservableObject {
         
         if let cdLead = try? context.fetch(request).first {
             cdLead.updateFromLead(lead)
-            coreDataStack.save()
-            loadLeads()
+            saveIfNeeded()
+            DispatchQueue.main.async {
+                self.loadLeads()
+            }
         }
     }
     
@@ -63,8 +74,10 @@ class DataManager: ObservableObject {
         
         if let cdLead = try? context.fetch(request).first {
             context.delete(cdLead)
-            coreDataStack.save()
-            loadLeads()
+            saveIfNeeded()
+            DispatchQueue.main.async {
+                self.loadLeads()
+            }
         }
     }
     

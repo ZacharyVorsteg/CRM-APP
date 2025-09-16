@@ -208,13 +208,22 @@ struct AddEditLeadView: View {
                         .lineLimit(3...6)
                 }
             }
-            .navigationTitle(isEditing ? "Edit Lead" : "New Lead")
+            .navigationTitle(isEditing ? "Edit Prospect" : "New Prospect")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .accessibilityHint("Discards changes and returns to prospect list")
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -223,6 +232,7 @@ struct AddEditLeadView: View {
                     }
                     .disabled(!isFormValid)
                     .foregroundColor(isFormValid ? .blue : .secondary)
+                    .accessibilityHint(isFormValid ? "Saves the prospect information" : "Complete required fields to save")
                 }
             }
         }
@@ -265,48 +275,54 @@ struct AddEditLeadView: View {
     }
     
     private func saveLead() {
+        // Sanitize inputs
+        let trimmedFirstName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedLastName = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPhone = phone.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedSF = requiredSquareFootage.trimmingCharacters(in: .whitespacesAndNewlines)
+        
         // Validation
-        guard !firstName.isEmpty else {
+        guard !trimmedFirstName.isEmpty else {
             showValidationAlert(message: "First name is required")
             return
         }
         
-        guard !lastName.isEmpty else {
+        guard !trimmedLastName.isEmpty else {
             showValidationAlert(message: "Last name is required")
             return
         }
         
-        guard !email.isEmpty else {
+        guard !trimmedEmail.isEmpty else {
             showValidationAlert(message: "Email address is required")
             return
         }
         
-        guard isValidEmail(email) else {
+        guard isValidEmail(trimmedEmail) else {
             showValidationAlert(message: "Please enter a valid email address")
             return
         }
         
-        guard !phone.isEmpty else {
+        guard !trimmedPhone.isEmpty else {
             showValidationAlert(message: "Phone number is required")
             return
         }
         
-        guard let requiredSF = Int(requiredSquareFootage), requiredSF > 0 else {
+        guard let requiredSF = Int(trimmedSF), requiredSF > 0 else {
             showValidationAlert(message: "Required square footage must be a valid number greater than 0")
             return
         }
         
-        // Auto-generate email if placeholder
-        let finalEmail = email.contains("@company.com") ? 
-            "\(firstName.lowercased()).\(lastName.lowercased())@\(businessType.rawValue.lowercased().replacingOccurrences(of: " ", with: "")).com" : email
+        // Use sanitized inputs
+        let finalEmail = trimmedEmail
         
         if let existingLead = lead {
             // Update existing lead
             var updatedLead = existingLead
-            updatedLead.firstName = firstName
-            updatedLead.lastName = lastName
+            updatedLead.firstName = trimmedFirstName
+            updatedLead.lastName = trimmedLastName
             updatedLead.email = finalEmail
-            updatedLead.phone = phone
+            updatedLead.phone = trimmedPhone
             updatedLead.status = status
             updatedLead.source = source
             updatedLead.notes = notes
@@ -328,10 +344,10 @@ struct AddEditLeadView: View {
         } else {
             // Create new lead
             var newLead = Lead(
-                firstName: firstName,
-                lastName: lastName,
+                firstName: trimmedFirstName,
+                lastName: trimmedLastName,
                 email: finalEmail,
-                phone: phone,
+                phone: trimmedPhone,
                 source: source,
                 businessType: businessType,
                 requiredSquareFootage: requiredSF

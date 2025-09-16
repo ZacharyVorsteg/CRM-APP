@@ -135,6 +135,7 @@ struct DashboardView: View {
                 .padding(.vertical)
             }
             .navigationTitle("Dashboard")
+            .navigationBarTitleDisplayMode(.inline)
         }
         .sheet(isPresented: $showingQuickAdd) {
             QuickAddProspectView()
