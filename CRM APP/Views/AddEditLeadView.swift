@@ -24,6 +24,11 @@ struct AddEditLeadView: View {
     @State private var estimatedValue = ""
     @State private var propertyAddress = ""
     
+    // Budget fields
+    @State private var budgetRange = BudgetRange.tbd
+    @State private var maxBudgetPerSF = ""
+    @State private var totalAnnualBudget = ""
+    
     // Industrial-specific fields
     @State private var businessType = BusinessType.distribution
     @State private var requiredSquareFootage = ""
@@ -188,6 +193,75 @@ struct AddEditLeadView: View {
                     }
                 }
                 
+                // Budget Section - Featured Component
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "dollarsign.circle.fill")
+                                .foregroundColor(.warningAmber)
+                                .font(.system(size: 18, weight: .medium))
+                            
+                            Text("Budget Information")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                            
+                            Spacer()
+                            
+                            // Budget status indicator
+                            if budgetRange != .tbd || !totalAnnualBudget.isEmpty || !maxBudgetPerSF.isEmpty {
+                                Circle()
+                                    .fill(.warningAmber)
+                                    .frame(width: 8, height: 8)
+                            }
+                        }
+                        
+                        Picker("Budget Range", selection: $budgetRange) {
+                            ForEach(BudgetRange.allCases, id: \.self) { range in
+                                Text(range.rawValue).tag(range)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .accentColor(.warningAmber)
+                        
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Max $/SF/Year")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                
+                                TextField("Optional", text: $maxBudgetPerSF)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Total Annual Budget")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                
+                                TextField("Optional", text: $totalAnnualBudget)
+                                    .keyboardType(.numberPad)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+                        }
+                        
+                        if budgetRange != .tbd || !totalAnnualBudget.isEmpty || !maxBudgetPerSF.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Estimated Annual Value")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                
+                                Text(formatEstimatedValue())
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.warningAmber)
+                            }
+                            .padding(.top, 8)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                }
+                
                 // Advanced Fields - Only show when toggled
                 if showAdvanced {
                     Section("Operational Details") {
@@ -339,6 +413,11 @@ struct AddEditLeadView: View {
         targetMoveDate = lead.targetMoveDate
         estimatedValue = lead.estimatedValue.map { String($0) } ?? ""
         propertyAddress = lead.propertyAddress ?? ""
+        
+        // Load budget fields
+        budgetRange = lead.budgetRange
+        maxBudgetPerSF = lead.maxBudgetPerSF?.description ?? ""
+        totalAnnualBudget = lead.totalAnnualBudget?.description ?? ""
     }
     
     private func saveLead() {
@@ -409,6 +488,11 @@ struct AddEditLeadView: View {
             updatedLead.estimatedValue = Double(estimatedValue.trimmingCharacters(in: .whitespacesAndNewlines))
             updatedLead.propertyAddress = propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines)
             
+            // Update budget fields
+            updatedLead.budgetRange = budgetRange
+            updatedLead.maxBudgetPerSF = Decimal(string: maxBudgetPerSF.trimmingCharacters(in: .whitespacesAndNewlines))
+            updatedLead.totalAnnualBudget = Decimal(string: totalAnnualBudget.trimmingCharacters(in: .whitespacesAndNewlines))
+            
             dataManager.updateLead(updatedLead)
         } else {
             // Create new lead
@@ -435,6 +519,11 @@ struct AddEditLeadView: View {
             newLead.estimatedValue = Double(estimatedValue.trimmingCharacters(in: .whitespacesAndNewlines))
             newLead.propertyAddress = propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines)
             
+            // Set budget fields
+            newLead.budgetRange = budgetRange
+            newLead.maxBudgetPerSF = Decimal(string: maxBudgetPerSF.trimmingCharacters(in: .whitespacesAndNewlines))
+            newLead.totalAnnualBudget = Decimal(string: totalAnnualBudget.trimmingCharacters(in: .whitespacesAndNewlines))
+            
             dataManager.addLead(newLead)
         }
         
@@ -458,6 +547,31 @@ struct AddEditLeadView: View {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
+    }
+    
+    private func formatEstimatedValue() -> String {
+        var estimatedValue: Double = 0
+        
+        if let totalBudget = Decimal(string: totalAnnualBudget.trimmingCharacters(in: .whitespacesAndNewlines)) {
+            estimatedValue = Double(truncating: totalBudget as NSNumber)
+        } else if let budgetPerSF = Decimal(string: maxBudgetPerSF.trimmingCharacters(in: .whitespacesAndNewlines)),
+                  let requiredSF = Int(requiredSquareFootage.trimmingCharacters(in: .whitespacesAndNewlines)) {
+            estimatedValue = Double(truncating: budgetPerSF as NSNumber) * Double(requiredSF)
+        } else {
+            estimatedValue = budgetRange.midpoint
+        }
+        
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.maximumFractionDigits = 0
+        
+        if estimatedValue >= 1_000_000 {
+            return String(format: "$%.1fM annually", estimatedValue / 1_000_000)
+        } else if estimatedValue >= 1_000 {
+            return String(format: "$%.0fK annually", estimatedValue / 1_000)
+        } else {
+            return formatter.string(from: NSNumber(value: estimatedValue)) ?? "$0"
+        }
     }
     
     // MARK: - Business-Specific Note Suggestions

@@ -37,6 +37,11 @@ extension CDLead {
         lead.shift24Hour = shift24Hour
         lead.targetMoveDate = targetMoveDate
         
+        // Budget fields
+        lead.budgetRange = BudgetRange(rawValue: budgetRange ?? "") ?? .tbd
+        lead.maxBudgetPerSF = maxBudgetPerSF as Decimal?
+        lead.totalAnnualBudget = totalAnnualBudget as Decimal?
+        
         return lead
     }
     
@@ -64,6 +69,11 @@ extension CDLead {
         self.fleetSize = Int16(lead.fleetSize ?? 0)
         self.shift24Hour = lead.shift24Hour
         self.targetMoveDate = lead.targetMoveDate
+        
+        // Budget fields
+        self.budgetRange = lead.budgetRange.rawValue
+        self.maxBudgetPerSF = lead.maxBudgetPerSF as NSDecimalNumber?
+        self.totalAnnualBudget = lead.totalAnnualBudget as NSDecimalNumber?
     }
 }
 

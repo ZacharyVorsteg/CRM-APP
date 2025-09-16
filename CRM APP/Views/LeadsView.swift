@@ -66,13 +66,13 @@ struct LeadsView: View {
                                         hapticFeedback()
                                         markAsQualified(lead)
                                     }
-                                    .tint(.accentColor)
+                                    .tint(.secondaryEmerald)
                                     
                                     Button("Archive") {
                                         hapticFeedback()
                                         archiveProspect(lead)
                                     }
-                                    .tint(.orange)
+                                    .tint(.warningAmber)
                                     
                                     Button("Delete", role: .destructive) {
                                         hapticFeedback()
@@ -379,8 +379,9 @@ struct LeadRowView: View {
                         }
                     }
                     
-                    // Business type and requirements
+                    // Business type, requirements, and budget
                     HStack(spacing: 12) {
+                        // Business type
                         Text(lead.businessType.rawValue)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -389,6 +390,7 @@ struct LeadRowView: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                         
+                        // Required space
                         Text(lead.formattedRequiredSF)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -401,12 +403,15 @@ struct LeadRowView: View {
                         
                         Spacer()
                         
-                        if let value = lead.estimatedValue {
-                            Text(formatCurrency(value))
-                                .font(.footnote)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                        }
+                        // Budget - Featured prominently
+                        Text(lead.formattedTotalBudget)
+                            .font(.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(.warningAmber)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(.warningAmber.opacity(0.15))
+                            .clipShape(Capsule())
                     }
                     
                     // Timeline and match info

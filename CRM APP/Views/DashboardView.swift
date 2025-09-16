@@ -27,21 +27,21 @@ struct DashboardView: View {
                             title: "Active Requirements",
                             value: formatSquareFootage(getActiveRequirements()),
                             icon: "building.2.fill",
-                            color: .blue
+                            color: .primaryBlue
                         )
                         
                         MetricCard(
                             title: "Available Inventory",
                             value: formatSquareFootage(getAvailableInventory()),
                             icon: "square.grid.3x3.fill",
-                            color: .green
+                            color: .secondaryEmerald
                         )
                         
                         MetricCard(
                             title: "Pipeline Value",
                             value: formatCurrency(getPipelineValue()),
                             icon: "chart.line.uptrend.xyaxis",
-                            color: .orange
+                            color: .warningAmber
                         )
                         
                         MetricCard(
@@ -163,10 +163,19 @@ struct DashboardView: View {
     }
     
     private func getPipelineValue() -> Double {
+        // Include deal pipeline value
         let pipelineDeals = dataManager.deals.filter { 
             $0.stage != .initialInquiry && $0.stage != .occupied && $0.stage != .lost 
         }
-        return pipelineDeals.reduce(0.0) { $0 + Double(truncating: $1.totalAnnualValue as NSNumber) }
+        let dealValue = pipelineDeals.reduce(0.0) { $0 + Double(truncating: $1.totalAnnualValue as NSNumber) }
+        
+        // Add estimated value from qualified prospects (potential pipeline)
+        let qualifiedProspects = dataManager.leads.filter { 
+            $0.status == .qualified || $0.status == .negotiating 
+        }
+        let prospectValue = qualifiedProspects.map { $0.estimatedAnnualValue }.reduce(0.0, +)
+        
+        return dealValue + prospectValue
     }
     
     private func getAverageDaysOnMarket() -> Int {
