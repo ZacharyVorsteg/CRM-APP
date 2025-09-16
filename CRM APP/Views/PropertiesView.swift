@@ -9,6 +9,29 @@ import SwiftUI
 
 struct PropertiesView: View {
     @EnvironmentObject var dataManager: DataManager
+    
+    // MARK: - Filter Types
+    enum SizeRange: String, CaseIterable {
+        case all = "All Sizes"
+        case small = "Under 50K SF"
+        case medium = "50K - 200K SF"
+        case large = "200K - 500K SF"
+        case xlarge = "Over 500K SF"
+    }
+    
+    enum ClearHeightRange: String, CaseIterable {
+        case all = "All Heights"
+        case low = "Under 24'"
+        case medium = "24' - 32'"
+        case high = "Over 32'"
+    }
+    
+    enum PropertySort: String, CaseIterable {
+        case dateAdded = "Date Added"
+        case size = "Size"
+        case price = "Price"
+        case location = "Location"
+    }
     @State private var showingAddProperty = false
     @State private var selectedProperty: Property?
     @State private var searchText = ""

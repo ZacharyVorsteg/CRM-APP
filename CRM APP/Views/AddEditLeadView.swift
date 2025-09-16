@@ -477,6 +477,8 @@ struct AddEditLeadView: View {
             return ["FDA compliance required", "Sanitary design", "Temperature control", "Wash-down capabilities"]
         case .retail:
             return ["Customer access needed", "Display area requirements", "Seasonal inventory", "Returns processing"]
+        case .thirdPartyLogistics:
+            return ["Multi-client operations", "WMS integration", "Scalable capacity", "Security protocols"]
         case .other:
             return ["Unique requirements", "Special considerations", "Custom needs", "Industry-specific"]
         }
