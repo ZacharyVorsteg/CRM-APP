@@ -85,25 +85,25 @@ struct AddEditPropertyView: View {
                         TextField("Street Address", text: $address)
                             .focused($focusedField, equals: .address)
                             .textContentType(.streetAddressLine1)
-                            .onChange(of: address) { _ in hasUnsavedChanges = true }
+                            .onChange(of: address) { _, _ in hasUnsavedChanges = true }
                         
                         HStack {
                             TextField("City", text: $city)
                                 .focused($focusedField, equals: .city)
                                 .textContentType(.addressCity)
-                                .onChange(of: city) { _ in hasUnsavedChanges = true }
+                                .onChange(of: city) { _, _ in hasUnsavedChanges = true }
                             
                             TextField("State", text: $state)
                                 .focused($focusedField, equals: .state)
                                 .textContentType(.addressState)
-                                .onChange(of: state) { _ in hasUnsavedChanges = true }
+                                .onChange(of: state) { _, _ in hasUnsavedChanges = true }
                         }
                         
                         TextField("ZIP Code", text: $zipCode)
                             .focused($focusedField, equals: .zipCode)
                             .keyboardType(.numberPad)
                             .textContentType(.postalCode)
-                            .onChange(of: zipCode) { _ in hasUnsavedChanges = true }
+                            .onChange(of: zipCode) { _, _ in hasUnsavedChanges = true }
                     }
                 }
                 
@@ -117,7 +117,7 @@ struct AddEditPropertyView: View {
                             TextField("Square Footage", text: $squareFootage)
                                 .focused($focusedField, equals: .squareFootage)
                                 .keyboardType(.numberPad)
-                                .onChange(of: squareFootage) { _ in hasUnsavedChanges = true }
+                                .onChange(of: squareFootage) { _, _ in hasUnsavedChanges = true }
                             
                             Text("SF")
                                 .font(.footnote)
@@ -134,7 +134,7 @@ struct AddEditPropertyView: View {
                             TextField("Clear Height", text: $clearHeight)
                                 .focused($focusedField, equals: .clearHeight)
                                 .keyboardType(.decimalPad)
-                                .onChange(of: clearHeight) { _ in hasUnsavedChanges = true }
+                                .onChange(of: clearHeight) { _, _ in hasUnsavedChanges = true }
                             
                             Text("ft")
                                 .font(.footnote)
@@ -149,6 +149,7 @@ struct AddEditPropertyView: View {
                     }
                 }
                     
+                Section("Loading & Infrastructure") {
                     Stepper("Loading Docks: \(loadingDocks)", value: $loadingDocks, in: 0...50)
                     
                     TextField("Column Spacing", text: $columnSpacing)
@@ -218,7 +219,7 @@ struct AddEditPropertyView: View {
                             TextField("Asking Rate", text: $askingRate)
                                 .focused($focusedField, equals: .askingRate)
                                 .keyboardType(.decimalPad)
-                                .onChange(of: askingRate) { _ in hasUnsavedChanges = true }
+                                .onChange(of: askingRate) { _, _ in hasUnsavedChanges = true }
                             
                             Text("$/SF/Year")
                                 .font(.footnote)
@@ -232,7 +233,7 @@ struct AddEditPropertyView: View {
                         }
                         
                         DatePicker("Available Date", selection: $availableDate, displayedComponents: .date)
-                            .onChange(of: availableDate) { _ in hasUnsavedChanges = true }
+                            .onChange(of: availableDate) { _, _ in hasUnsavedChanges = true }
                     }
                 }
                 
@@ -322,6 +323,7 @@ struct AddEditPropertyView: View {
         }
     }
     
+    // MARK: - Helper Functions
     private func loadPropertyData(_ property: Property) {
         address = property.address
         city = property.city
