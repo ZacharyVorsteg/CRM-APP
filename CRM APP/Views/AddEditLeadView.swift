@@ -118,71 +118,72 @@ struct AddEditLeadView: View {
                         .foregroundStyle(.secondary)
                 }
                 
+                // Advanced Toggle - Separate Section to Avoid Touch Conflicts
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Business Requirements")
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-                            
-                            Spacer()
-                            
-                            Button(showAdvanced ? "✓ Basic" : "Advanced") {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showAdvanced.toggle()
-                                    print("DEBUG: showAdvanced is now \(showAdvanced)")
-                                }
+                    HStack {
+                        Text("Business Requirements")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        
+                        Spacer()
+                        
+                        Button(showAdvanced ? "✓ Basic" : "Advanced") {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showAdvanced.toggle()
+                                print("DEBUG: showAdvanced is now \(showAdvanced)")
                             }
+                        }
+                        .font(.footnote)
+                        .foregroundColor(.accentColor)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.accentColor.opacity(showAdvanced ? 0.2 : 0.1))
+                        .clipShape(Capsule())
+                        .overlay(alignment: .topTrailing) {
+                            if hasAdvancedData {
+                                Circle()
+                                    .fill(Color.accentColor)
+                                    .frame(width: 6, height: 6)
+                                    .offset(x: 4, y: -4)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                
+                Section("Basic Information") {
+                    Picker("Business Type", selection: $businessType) {
+                        ForEach(BusinessType.allCases, id: \.self) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    
+                    HStack {
+                        TextField("Required Square Footage", text: $requiredSquareFootage)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(fieldErrors.contains("requiredSF") ? Color.red : Color.clear, lineWidth: 1)
+                            )
+                            .onChange(of: requiredSquareFootage) { _, _ in
+                                fieldErrors.remove("requiredSF")
+                            }
+                        
+                        Text("SF")
                             .font(.footnote)
-                            .foregroundColor(.accentColor)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.accentColor.opacity(showAdvanced ? 0.2 : 0.1))
-                            .clipShape(Capsule())
-                            .overlay(alignment: .topTrailing) {
-                                if hasAdvancedData {
-                                    Circle()
-                                        .fill(Color.accentColor)
-                                        .frame(width: 6, height: 6)
-                                        .offset(x: 4, y: -4)
-                                }
-                            }
-                        }
-                        
-                        // BASIC FIELDS ONLY
-                        Picker("Business Type", selection: $businessType) {
-                            ForEach(BusinessType.allCases, id: \.self) { type in
-                                Text(type.rawValue).tag(type)
-                            }
-                        }
-                        
-                        HStack {
-                            TextField("Required Square Footage", text: $requiredSquareFootage)
-                                .keyboardType(.numberPad)
-                                .textFieldStyle(.roundedBorder)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(fieldErrors.contains("requiredSF") ? Color.red : Color.clear, lineWidth: 1)
-                                )
-                                .onChange(of: requiredSquareFootage) { _, _ in
-                                    fieldErrors.remove("requiredSF")
-                                }
-                            
-                            Text("SF")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        if requiredSquareFootage.isEmpty {
-                            Text("Required")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        Picker("Expansion Timeline", selection: $expansionTimeline) {
-                            ForEach(ExpansionTimeline.allCases, id: \.self) { timeline in
-                                Text(timeline.rawValue).tag(timeline)
-                            }
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    if requiredSquareFootage.isEmpty {
+                        Text("Required")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Picker("Expansion Timeline", selection: $expansionTimeline) {
+                        ForEach(ExpansionTimeline.allCases, id: \.self) { timeline in
+                            Text(timeline.rawValue).tag(timeline)
                         }
                     }
                 }
