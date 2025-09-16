@@ -131,15 +131,14 @@ struct AddEditLeadView: View {
                             .padding(.vertical, 4)
                             .background(Color.accentColor.opacity(showAdvanced ? 0.2 : 0.1))
                             .clipShape(Capsule())
-                            .overlay(
-                                // Show dot if advanced fields have data
-                                hasAdvancedData ? 
-                                Circle()
-                                    .fill(Color.accentColor)
-                                    .frame(width: 6, height: 6)
-                                    .offset(x: 12, y: -8)
-                                : nil
-                            )
+                            .overlay(alignment: .topTrailing) {
+                                if hasAdvancedData {
+                                    Circle()
+                                        .fill(Color.accentColor)
+                                        .frame(width: 6, height: 6)
+                                        .offset(x: 4, y: -4)
+                                }
+                            }
                         }
                         
                         Picker("Business Type", selection: $businessType) {
@@ -289,14 +288,14 @@ struct AddEditLeadView: View {
         notes = lead.notes
         businessType = lead.businessType
         requiredSquareFootage = String(lead.requiredSquareFootage)
-        currentFacilitySize = lead.currentFacilitySize.map(String.init) ?? ""
+        currentFacilitySize = lead.currentFacilitySize.map { String($0) } ?? ""
         expansionTimeline = lead.expansionTimeline
         temperatureRequirements = lead.temperatureRequirements
         annualThroughput = lead.annualThroughput ?? ""
-        fleetSize = lead.fleetSize.map(String.init) ?? ""
+        fleetSize = lead.fleetSize.map { String($0) } ?? ""
         shift24Hour = lead.shift24Hour
         targetMoveDate = lead.targetMoveDate
-        estimatedValue = lead.estimatedValue.map(String.init) ?? ""
+        estimatedValue = lead.estimatedValue.map { String($0) } ?? ""
         propertyAddress = lead.propertyAddress ?? ""
     }
     
@@ -371,26 +370,28 @@ struct AddEditLeadView: View {
             dataManager.updateLead(updatedLead)
         } else {
             // Create new lead
-            let newLead = Lead(
+            var newLead = Lead(
                 firstName: trimmedFirstName,
                 lastName: trimmedLastName,
                 email: trimmedEmail,
                 phone: trimmedPhone,
-                status: status,
                 source: source,
-                notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
                 businessType: businessType,
-                requiredSquareFootage: requiredSF,
-                currentFacilitySize: Int(currentFacilitySize.trimmingCharacters(in: .whitespacesAndNewlines)),
-                expansionTimeline: expansionTimeline,
-                temperatureRequirements: temperatureRequirements,
-                annualThroughput: annualThroughput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : annualThroughput.trimmingCharacters(in: .whitespacesAndNewlines),
-                fleetSize: Int(fleetSize.trimmingCharacters(in: .whitespacesAndNewlines)),
-                shift24Hour: shift24Hour,
-                targetMoveDate: targetMoveDate,
-                estimatedValue: Double(estimatedValue.trimmingCharacters(in: .whitespacesAndNewlines)),
-                propertyAddress: propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+                requiredSquareFootage: requiredSF
             )
+            
+            // Set additional properties
+            newLead.status = status
+            newLead.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            newLead.currentFacilitySize = Int(currentFacilitySize.trimmingCharacters(in: .whitespacesAndNewlines))
+            newLead.expansionTimeline = expansionTimeline
+            newLead.temperatureRequirements = temperatureRequirements
+            newLead.annualThroughput = annualThroughput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : annualThroughput.trimmingCharacters(in: .whitespacesAndNewlines)
+            newLead.fleetSize = Int(fleetSize.trimmingCharacters(in: .whitespacesAndNewlines))
+            newLead.shift24Hour = shift24Hour
+            newLead.targetMoveDate = targetMoveDate
+            newLead.estimatedValue = Double(estimatedValue.trimmingCharacters(in: .whitespacesAndNewlines))
+            newLead.propertyAddress = propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines)
             
             dataManager.addLead(newLead)
         }

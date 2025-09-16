@@ -133,17 +133,16 @@ struct AddEditPropertyView: View {
                             .foregroundColor(.accentColor)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(.accentColor.opacity(showAdvanced ? 0.2 : 0.1))
+                            .background(Color.accentColor.opacity(showAdvanced ? 0.2 : 0.1))
                             .clipShape(Capsule())
-                            .overlay(
-                                // Show dot if advanced fields have data
-                                hasAdvancedData ? 
-                                Circle()
-                                    .fill(.accentColor)
-                                    .frame(width: 6, height: 6)
-                                    .offset(x: 12, y: -8)
-                                : nil
-                            )
+                            .overlay(alignment: .topTrailing) {
+                                if hasAdvancedData {
+                                    Circle()
+                                        .fill(Color.accentColor)
+                                        .frame(width: 6, height: 6)
+                                        .offset(x: 4, y: -4)
+                                }
+                            }
                         }
                         
                         HStack {
