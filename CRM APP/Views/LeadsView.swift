@@ -68,6 +68,12 @@ struct LeadsView: View {
                                     }
                                     .tint(.accentColor)
                                     
+                                    Button("Archive") {
+                                        hapticFeedback()
+                                        archiveProspect(lead)
+                                    }
+                                    .tint(.orange)
+                                    
                                     Button("Delete", role: .destructive) {
                                         hapticFeedback()
                                         dataManager.deleteLead(lead)
@@ -169,6 +175,14 @@ struct LeadsView: View {
     private func hapticFeedback() {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
+    }
+    
+    private func archiveProspect(_ lead: Lead) {
+        var updatedLead = lead
+        updatedLead.status = .unqualified
+        updatedLead.notes = "Archived \(Date().formatted(date: .abbreviated, time: .omitted)). \(updatedLead.notes)"
+        
+        dataManager.updateLead(updatedLead)
     }
     
     // MARK: - Search

@@ -253,12 +253,40 @@ struct AddEditLeadView: View {
                             }
                     }
                     
-                    Section("Additional Notes") {
-                        TextField("Notes", text: $notes, axis: .vertical)
-                            .lineLimit(3...6)
-                            .placeholder(when: notes.isEmpty) {
-                                Text("Additional notes or requirements")
+                    Section("Business Notes") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Notes", text: $notes, axis: .vertical)
+                                .lineLimit(3...6)
+                                .placeholder(when: notes.isEmpty) {
+                                    Text("Unique requirements, baseline needs, special considerations...")
+                                }
+                            
+                            // Business-specific note suggestions
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(businessNoteSuggestions, id: \.self) { suggestion in
+                                        Button(suggestion) {
+                                            if notes.isEmpty {
+                                                notes = suggestion
+                                            } else {
+                                                notes += "\n• \(suggestion)"
+                                            }
+                                        }
+                                        .font(.caption)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(.secondary.opacity(0.1))
+                                        .clipShape(Capsule())
+                                    }
+                                }
+                                .padding(.horizontal, 4)
                             }
+                            
+                            Text("Tip: Document unique operational baselines for this business type")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .italic()
+                        }
                     }
                 }
             }
@@ -430,6 +458,28 @@ struct AddEditLeadView: View {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
+    }
+    
+    // MARK: - Business-Specific Note Suggestions
+    private var businessNoteSuggestions: [String] {
+        switch businessType {
+        case .manufacturing:
+            return ["Heavy machinery requirements", "24/7 operations", "Specialized power needs", "Environmental compliance"]
+        case .distribution:
+            return ["High dock count needed", "Cross-dock capabilities", "Fleet parking requirements", "Rapid throughput"]
+        case .ecommerce:
+            return ["Seasonal scaling needs", "Automation-ready", "Returns processing area", "Peak capacity planning"]
+        case .coldStorage:
+            return ["Temperature zones required", "Energy efficiency critical", "Specialized flooring", "Backup power essential"]
+        case .automotive:
+            return ["Heavy floor loading", "Paint booth requirements", "Parts storage needs", "Service bay access"]
+        case .foodBeverage:
+            return ["FDA compliance required", "Sanitary design", "Temperature control", "Wash-down capabilities"]
+        case .retail:
+            return ["Customer access needed", "Display area requirements", "Seasonal inventory", "Returns processing"]
+        case .other:
+            return ["Unique requirements", "Special considerations", "Custom needs", "Industry-specific"]
+        }
     }
 }
 

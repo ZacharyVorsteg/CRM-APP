@@ -135,14 +135,21 @@ struct PropertiesView: View {
                                     .onTapGesture {
                                         selectedProperty = property
                                     }
-                                    .contextMenu {
+                                    .swipeActions(edge: .trailing) {
                                         Button("Edit") {
                                             selectedProperty = property
                                         }
+                                        .tint(.blue)
+                                        
+                                        Button("Archive") {
+                                            archiveProperty(property)
+                                        }
+                                        .tint(.orange)
                                         
                                         Button("Delete", role: .destructive) {
                                             dataManager.deleteProperty(property)
                                         }
+                                        .tint(.red)
                                     }
                                     .accessibilityLabel("\(property.address), \(property.formattedSquareFootage), \(property.formattedClearHeight), \(property.status.rawValue)")
                                     .accessibilityHint("Tap to edit warehouse details")
@@ -179,10 +186,21 @@ struct PropertiesView: View {
             .sheet(isPresented: $showingAddProperty) {
                 AddEditPropertyView(property: nil)
             }
-            .sheet(item: $selectedProperty) { property in
-                AddEditPropertyView(property: property)
-            }
+        .sheet(item: $selectedProperty) { property in
+            AddEditPropertyView(property: property)
         }
+    }
+    
+    // MARK: - Helper Functions
+    private func archiveProperty(_ property: Property) {
+        var updatedProperty = property
+        updatedProperty.status = .leased
+        updatedProperty.description = "Archived \(Date().formatted(date: .abbreviated, time: .omitted)). \(updatedProperty.description)"
+        
+        dataManager.updateProperty(updatedProperty)
+        
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
     }
 }
 
