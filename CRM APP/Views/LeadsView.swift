@@ -8,6 +8,13 @@
 import SwiftUI
 import UIKit
 
+// Import design system colors for consistency
+extension Color {
+    static let primaryBlue = Color(red: 0.118, green: 0.227, blue: 0.541) // #1E3A8A
+    static let secondaryEmerald = Color(red: 0.063, green: 0.725, blue: 0.506) // #10B981
+    static let warningAmber = Color(red: 0.961, green: 0.620, blue: 0.043) // #F59E0B
+}
+
 struct LeadsView: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var showingAddLead = false
