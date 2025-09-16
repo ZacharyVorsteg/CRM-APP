@@ -38,6 +38,7 @@ struct AddEditLeadView: View {
     @State private var showingValidationAlert = false
     @State private var validationMessage = ""
     @State private var fieldErrors: Set<String> = []
+    @State private var showAdvanced = false
     
     var isEditing: Bool {
         lead != nil
@@ -46,6 +47,13 @@ struct AddEditLeadView: View {
     var isFormValid: Bool {
         !firstName.isEmpty && !lastName.isEmpty && !email.isEmpty && !phone.isEmpty && 
         !requiredSquareFootage.isEmpty && Int(requiredSquareFootage) != nil
+    }
+    
+    var hasAdvancedData: Bool {
+        !currentFacilitySize.isEmpty || !annualThroughput.isEmpty || !fleetSize.isEmpty ||
+        shift24Hour || targetMoveDate != nil || !estimatedValue.isEmpty || 
+        !propertyAddress.isEmpty || !notes.isEmpty || status != .new || source != .website ||
+        temperatureRequirements != .ambient
     }
     
     var body: some View {
@@ -77,7 +85,6 @@ struct AddEditLeadView: View {
                         
                         TextField("Email Address *", text: $email)
                             .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
                             .textFieldStyle(.roundedBorder)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
@@ -100,30 +107,49 @@ struct AddEditLeadView: View {
                     }
                     
                     Text("* Required fields")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
                 
-                Section("Space Requirements") {
-                    VStack(alignment: .leading, spacing: 12) {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Picker("Business Type", selection: $businessType) {
-                                ForEach(BusinessType.allCases, id: \.self) { type in
-                                    Text(type.rawValue).tag(type)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
+                            Text("Business Requirements")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
                             
-                            Picker("Timeline", selection: $expansionTimeline) {
-                                ForEach(ExpansionTimeline.allCases, id: \.self) { timeline in
-                                    Text(timeline.rawValue).tag(timeline)
+                            Spacer()
+                            
+                            Button(showAdvanced ? "Basic" : "Advanced") {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showAdvanced.toggle()
                                 }
                             }
-                            .frame(maxWidth: .infinity)
+                            .font(.footnote)
+                            .foregroundColor(.accentColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.accentColor.opacity(showAdvanced ? 0.2 : 0.1))
+                            .clipShape(Capsule())
+                            .overlay(
+                                // Show dot if advanced fields have data
+                                hasAdvancedData ? 
+                                Circle()
+                                    .fill(Color.accentColor)
+                                    .frame(width: 6, height: 6)
+                                    .offset(x: 12, y: -8)
+                                : nil
+                            )
+                        }
+                        
+                        Picker("Business Type", selection: $businessType) {
+                            ForEach(BusinessType.allCases, id: \.self) { type in
+                                Text(type.rawValue).tag(type)
+                            }
                         }
                         
                         HStack {
-                            TextField("Required Square Feet *", text: $requiredSquareFootage)
+                            TextField("Required Square Footage", text: $requiredSquareFootage)
                                 .keyboardType(.numberPad)
                                 .textFieldStyle(.roundedBorder)
                                 .overlay(
@@ -134,96 +160,102 @@ struct AddEditLeadView: View {
                                     fieldErrors.remove("requiredSF")
                                 }
                             
-                            Picker("Temperature", selection: $temperatureRequirements) {
-                                ForEach(TemperatureRequirements.allCases, id: \.self) { temp in
-                                    Text(temp.rawValue).tag(temp)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
+                            Text("SF")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
                         }
                         
-                        HStack {
-                            Toggle("24/7 Operations", isOn: $shift24Hour)
-                            
-                            Spacer()
+                        if requiredSquareFootage.isEmpty {
+                            Text("Required")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
                         }
                         
-                        // Optional fields section
-                        DisclosureGroup("Additional Details (Optional)") {
-                            VStack(spacing: 12) {
-                                TextField("Current Facility Size", text: $currentFacilitySize)
-                                    .keyboardType(.numberPad)
-                                    .textFieldStyle(.roundedBorder)
-                                
-                                TextField("Fleet Size", text: $fleetSize)
-                                    .keyboardType(.numberPad)
-                                    .textFieldStyle(.roundedBorder)
-                                
-                                TextField("Annual Throughput", text: $annualThroughput)
-                                    .textFieldStyle(.roundedBorder)
-                                    .placeholder(when: annualThroughput.isEmpty) {
-                                        Text("e.g., 50M lbs/year")
-                                    }
+                        Picker("Expansion Timeline", selection: $expansionTimeline) {
+                            ForEach(ExpansionTimeline.allCases, id: \.self) { timeline in
+                                Text(timeline.rawValue).tag(timeline)
                             }
                         }
                     }
                 }
                 
-                Section("Lead Details") {
-                    Picker("Status", selection: $status) {
-                        ForEach(LeadStatus.allCases, id: \.self) { status in
-                            Text(status.rawValue).tag(status)
+                // Advanced Fields - Only show when toggled
+                if showAdvanced {
+                    Section("Operational Details") {
+                        Picker("Temperature Requirements", selection: $temperatureRequirements) {
+                            ForEach(TemperatureRequirements.allCases, id: \.self) { temp in
+                                Text(temp.rawValue).tag(temp)
+                            }
                         }
+                        
+                        TextField("Current Facility Size", text: $currentFacilitySize)
+                            .keyboardType(.numberPad)
+                            .placeholder(when: currentFacilitySize.isEmpty) {
+                                Text("Current SF (optional)")
+                            }
+                        
+                        TextField("Annual Throughput", text: $annualThroughput)
+                            .placeholder(when: annualThroughput.isEmpty) {
+                                Text("e.g., 50M lbs/year")
+                            }
+                        
+                        TextField("Fleet Size", text: $fleetSize)
+                            .keyboardType(.numberPad)
+                            .placeholder(when: fleetSize.isEmpty) {
+                                Text("Number of trucks/trailers")
+                            }
+                        
+                        Toggle("24/7 Operations", isOn: $shift24Hour)
                     }
                     
-                    Picker("Source", selection: $source) {
-                        ForEach(LeadSource.allCases, id: \.self) { source in
-                            Text(source.rawValue).tag(source)
+                    Section("Timeline & Financial") {
+                        DatePicker("Target Move Date", selection: Binding(
+                            get: { targetMoveDate ?? Date().addingTimeInterval(86400 * 90) },
+                            set: { targetMoveDate = $0 }
+                        ), displayedComponents: .date)
+                        
+                        TextField("Estimated Deal Value", text: $estimatedValue)
+                            .keyboardType(.decimalPad)
+                            .placeholder(when: estimatedValue.isEmpty) {
+                                Text("Annual lease value")
+                            }
+                    }
+                    
+                    Section("Lead Management") {
+                        Picker("Status", selection: $status) {
+                            ForEach(LeadStatus.allCases, id: \.self) { status in
+                                Text(status.rawValue).tag(status)
+                            }
                         }
-                    }
-                    
-                    TextField("Estimated Annual Lease Value", text: $estimatedValue)
-                        .keyboardType(.decimalPad)
-                    
-                    TextField("Current Property Address (optional)", text: $propertyAddress)
-                    
-                    HStack {
-                        Text("Target Move Date")
-                        Spacer()
-                        if let date = targetMoveDate {
-                            Text(date.formatted(date: .abbreviated, time: .omitted))
-                                .foregroundColor(.blue)
-                        } else {
-                            Text("Not Set")
-                                .foregroundColor(.secondary)
+                        
+                        Picker("Source", selection: $source) {
+                            ForEach(LeadSource.allCases, id: \.self) { source in
+                                Text(source.rawValue).tag(source)
+                            }
                         }
+                        
+                        TextField("Current Property Address", text: $propertyAddress)
+                            .placeholder(when: propertyAddress.isEmpty) {
+                                Text("Current location (optional)")
+                            }
                     }
-                    .onTapGesture {
-                        showingDatePicker = true
+                    
+                    Section("Additional Notes") {
+                        TextField("Notes", text: $notes, axis: .vertical)
+                            .lineLimit(3...6)
+                            .placeholder(when: notes.isEmpty) {
+                                Text("Additional notes or requirements")
+                            }
                     }
-                }
-                
-                Section("Notes") {
-                    TextField("Notes", text: $notes, axis: .vertical)
-                        .lineLimit(3...6)
                 }
             }
             .navigationTitle(isEditing ? "Edit Prospect" : "New Prospect")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    }
-                }
-            }
-            .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .accessibilityHint("Discards changes and returns to prospect list")
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -231,13 +263,8 @@ struct AddEditLeadView: View {
                         saveLead()
                     }
                     .disabled(!isFormValid)
-                    .foregroundColor(isFormValid ? .blue : .secondary)
-                    .accessibilityHint(isFormValid ? "Saves the prospect information" : "Complete required fields to save")
                 }
             }
-        }
-        .sheet(isPresented: $showingDatePicker) {
-            DatePickerSheet(selectedDate: $targetMoveDate)
         }
         .alert("Validation Error", isPresented: $showingValidationAlert) {
             Button("OK", role: .cancel) { }
@@ -251,6 +278,7 @@ struct AddEditLeadView: View {
         }
     }
     
+    // MARK: - Helper Functions
     private func loadLeadData(_ lead: Lead) {
         firstName = lead.firstName
         lastName = lead.lastName
@@ -259,150 +287,134 @@ struct AddEditLeadView: View {
         status = lead.status
         source = lead.source
         notes = lead.notes
-        estimatedValue = lead.estimatedValue?.formatted() ?? ""
-        propertyAddress = lead.propertyAddress ?? ""
-        
-        // Industrial-specific fields
         businessType = lead.businessType
         requiredSquareFootage = String(lead.requiredSquareFootage)
-        currentFacilitySize = lead.currentFacilitySize?.description ?? ""
+        currentFacilitySize = lead.currentFacilitySize.map(String.init) ?? ""
         expansionTimeline = lead.expansionTimeline
         temperatureRequirements = lead.temperatureRequirements
         annualThroughput = lead.annualThroughput ?? ""
-        fleetSize = lead.fleetSize?.description ?? ""
+        fleetSize = lead.fleetSize.map(String.init) ?? ""
         shift24Hour = lead.shift24Hour
         targetMoveDate = lead.targetMoveDate
+        estimatedValue = lead.estimatedValue.map(String.init) ?? ""
+        propertyAddress = lead.propertyAddress ?? ""
     }
     
     private func saveLead() {
-        // Sanitize inputs
+        // Validate required fields
+        fieldErrors.removeAll()
+        
         let trimmedFirstName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedLastName = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedPhone = phone.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedSF = requiredSquareFootage.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedRequiredSF = requiredSquareFootage.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // Validation
         guard !trimmedFirstName.isEmpty else {
             showValidationAlert(message: "First name is required")
+            fieldErrors.insert("firstName")
             return
         }
         
         guard !trimmedLastName.isEmpty else {
             showValidationAlert(message: "Last name is required")
+            fieldErrors.insert("lastName")
             return
         }
         
         guard !trimmedEmail.isEmpty else {
             showValidationAlert(message: "Email address is required")
+            fieldErrors.insert("email")
             return
         }
         
         guard isValidEmail(trimmedEmail) else {
             showValidationAlert(message: "Please enter a valid email address")
+            fieldErrors.insert("email")
             return
         }
         
         guard !trimmedPhone.isEmpty else {
             showValidationAlert(message: "Phone number is required")
+            fieldErrors.insert("phone")
             return
         }
         
-        guard let requiredSF = Int(trimmedSF), requiredSF > 0 else {
-            showValidationAlert(message: "Required square footage must be a valid number greater than 0")
+        guard !trimmedRequiredSF.isEmpty, let requiredSF = Int(trimmedRequiredSF) else {
+            showValidationAlert(message: "Required square footage must be a valid number")
+            fieldErrors.insert("requiredSF")
             return
         }
-        
-        // Use sanitized inputs
-        let finalEmail = trimmedEmail
         
         if let existingLead = lead {
             // Update existing lead
             var updatedLead = existingLead
             updatedLead.firstName = trimmedFirstName
             updatedLead.lastName = trimmedLastName
-            updatedLead.email = finalEmail
+            updatedLead.email = trimmedEmail
             updatedLead.phone = trimmedPhone
             updatedLead.status = status
             updatedLead.source = source
-            updatedLead.notes = notes
-            updatedLead.estimatedValue = Double(estimatedValue)
-            updatedLead.propertyAddress = propertyAddress.isEmpty ? nil : propertyAddress
-            
-            // Industrial-specific fields
+            updatedLead.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
             updatedLead.businessType = businessType
             updatedLead.requiredSquareFootage = requiredSF
-            updatedLead.currentFacilitySize = Int(currentFacilitySize)
+            updatedLead.currentFacilitySize = Int(currentFacilitySize.trimmingCharacters(in: .whitespacesAndNewlines))
             updatedLead.expansionTimeline = expansionTimeline
             updatedLead.temperatureRequirements = temperatureRequirements
-            updatedLead.annualThroughput = annualThroughput.isEmpty ? nil : annualThroughput
-            updatedLead.fleetSize = Int(fleetSize)
+            updatedLead.annualThroughput = annualThroughput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : annualThroughput.trimmingCharacters(in: .whitespacesAndNewlines)
+            updatedLead.fleetSize = Int(fleetSize.trimmingCharacters(in: .whitespacesAndNewlines))
             updatedLead.shift24Hour = shift24Hour
             updatedLead.targetMoveDate = targetMoveDate
+            updatedLead.estimatedValue = Double(estimatedValue.trimmingCharacters(in: .whitespacesAndNewlines))
+            updatedLead.propertyAddress = propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines)
             
             dataManager.updateLead(updatedLead)
         } else {
             // Create new lead
-            var newLead = Lead(
+            let newLead = Lead(
                 firstName: trimmedFirstName,
                 lastName: trimmedLastName,
-                email: finalEmail,
+                email: trimmedEmail,
                 phone: trimmedPhone,
+                status: status,
                 source: source,
+                notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
                 businessType: businessType,
-                requiredSquareFootage: requiredSF
+                requiredSquareFootage: requiredSF,
+                currentFacilitySize: Int(currentFacilitySize.trimmingCharacters(in: .whitespacesAndNewlines)),
+                expansionTimeline: expansionTimeline,
+                temperatureRequirements: temperatureRequirements,
+                annualThroughput: annualThroughput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : annualThroughput.trimmingCharacters(in: .whitespacesAndNewlines),
+                fleetSize: Int(fleetSize.trimmingCharacters(in: .whitespacesAndNewlines)),
+                shift24Hour: shift24Hour,
+                targetMoveDate: targetMoveDate,
+                estimatedValue: Double(estimatedValue.trimmingCharacters(in: .whitespacesAndNewlines)),
+                propertyAddress: propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : propertyAddress.trimmingCharacters(in: .whitespacesAndNewlines)
             )
-            newLead.status = status
-            newLead.notes = notes
-            newLead.estimatedValue = Double(estimatedValue)
-            newLead.propertyAddress = propertyAddress.isEmpty ? nil : propertyAddress
-            newLead.currentFacilitySize = Int(currentFacilitySize)
-            newLead.expansionTimeline = expansionTimeline
-            newLead.temperatureRequirements = temperatureRequirements
-            newLead.annualThroughput = annualThroughput.isEmpty ? nil : annualThroughput
-            newLead.fleetSize = Int(fleetSize)
-            newLead.shift24Hour = shift24Hour
-            newLead.targetMoveDate = targetMoveDate
             
             dataManager.addLead(newLead)
         }
         
-        // Success feedback
+        // Success haptic feedback
         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
         impactFeedback.impactOccurred()
         
-        let notificationFeedback = UINotificationFeedbackGenerator()
-        notificationFeedback.notificationOccurred(.success)
-        
         dismiss()
-    }
-    
-    private func isValidEmail(_ email: String) -> Bool {
-        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-        let emailPredicate = NSPredicate(format:"SELF MATCHES %@", emailRegex)
-        return emailPredicate.evaluate(with: email)
     }
     
     private func showValidationAlert(message: String) {
         validationMessage = message
         showingValidationAlert = true
         
-        // Add visual feedback to problematic fields
-        if message.contains("First name") {
-            fieldErrors.insert("firstName")
-        } else if message.contains("Last name") {
-            fieldErrors.insert("lastName")
-        } else if message.contains("Email") {
-            fieldErrors.insert("email")
-        } else if message.contains("Phone") {
-            fieldErrors.insert("phone")
-        } else if message.contains("square footage") {
-            fieldErrors.insert("requiredSF")
-        }
-        
-        // Haptic feedback for error
+        // Error haptic feedback
         let notificationFeedback = UINotificationFeedbackGenerator()
         notificationFeedback.notificationOccurred(.error)
+    }
+    
+    private func isValidEmail(_ email: String) -> Bool {
+        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+        return emailPredicate.evaluate(with: email)
     }
 }
 

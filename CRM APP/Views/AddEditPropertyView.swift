@@ -42,6 +42,7 @@ struct AddEditPropertyView: View {
     @AppStorage("lastPropertyState") private var lastState = ""
     @State private var showingPasteConfirmation = false
     @State private var pendingParsedAddress: ParsedAddress?
+    @State private var showAdvanced = false
     
     var isEditing: Bool {
         property != nil
@@ -51,6 +52,13 @@ struct AddEditPropertyView: View {
         !address.isEmpty && !city.isEmpty && !state.isEmpty && !zipCode.isEmpty && 
         !squareFootage.isEmpty && !clearHeight.isEmpty && !askingRate.isEmpty &&
         Int(squareFootage) != nil && Double(clearHeight) != nil && Decimal(string: askingRate) != nil
+    }
+    
+    var hasAdvancedData: Bool {
+        !powerCapacity.isEmpty || !columnSpacing.isEmpty || !craneCapacity.isEmpty ||
+        !ceilingType.isEmpty || !yearBuilt.isEmpty || !officeSquareFootage.isEmpty ||
+        !yardSize.isEmpty || !description.isEmpty || railAccess || 
+        truckCourtDepth != 130 || zoning != .lightIndustrial || sprinklerSystem != .wet
     }
     
     enum PropertyField {
@@ -109,9 +117,34 @@ struct AddEditPropertyView: View {
                 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Warehouse Specifications")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                        HStack {
+                            Text("Warehouse Specifications")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                            
+                            Spacer()
+                            
+                            Button(showAdvanced ? "Basic" : "Advanced") {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showAdvanced.toggle()
+                                }
+                            }
+                            .font(.footnote)
+                            .foregroundColor(.accentColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.accentColor.opacity(showAdvanced ? 0.2 : 0.1))
+                            .clipShape(Capsule())
+                            .overlay(
+                                // Show dot if advanced fields have data
+                                hasAdvancedData ? 
+                                Circle()
+                                    .fill(.accentColor)
+                                    .frame(width: 6, height: 6)
+                                    .offset(x: 12, y: -8)
+                                : nil
+                            )
+                        }
                         
                         HStack {
                             TextField("Square Footage", text: $squareFootage)
@@ -146,61 +179,76 @@ struct AddEditPropertyView: View {
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
+                        
+                        Stepper("Loading Docks: \(loadingDocks)", value: $loadingDocks, in: 0...50)
+                            .onChange(of: loadingDocks) { _, _ in hasUnsavedChanges = true }
                     }
                 }
                     
-                Section("Loading & Infrastructure") {
-                    Stepper("Loading Docks: \(loadingDocks)", value: $loadingDocks, in: 0...50)
-                    
-                    TextField("Column Spacing", text: $columnSpacing)
-                        .placeholder(when: columnSpacing.isEmpty) {
-                            Text("e.g., 40' x 50'")
+                // Advanced Fields - Only show when toggled
+                if showAdvanced {
+                    Section("Infrastructure & Utilities") {
+                        TextField("Power Capacity", text: $powerCapacity)
+                            .placeholder(when: powerCapacity.isEmpty) {
+                                Text("e.g., 480V/3-phase/2000 amps")
+                            }
+                            .onChange(of: powerCapacity) { _, _ in hasUnsavedChanges = true }
+                        
+                        Picker("Sprinkler System", selection: $sprinklerSystem) {
+                            ForEach(SprinklerSystem.allCases, id: \.self) { system in
+                                Text(system.rawValue).tag(system)
+                            }
                         }
-                    
-                    TextField("Truck Court Depth (feet)", value: $truckCourtDepth, format: .number)
-                        .keyboardType(.numberPad)
-                    
-                    Toggle("Rail Access", isOn: $railAccess)
-                    
-                    TextField("Crane Capacity (optional)", text: $craneCapacity)
-                        .placeholder(when: craneCapacity.isEmpty) {
-                            Text("e.g., 5 ton bridge crane")
+                        .onChange(of: sprinklerSystem) { _, _ in hasUnsavedChanges = true }
+                        
+                        Picker("Zoning", selection: $zoning) {
+                            ForEach(ZoningType.allCases, id: \.self) { zone in
+                                Text(zone.rawValue).tag(zone)
+                            }
                         }
-                }
-                
-                Section("Infrastructure & Utilities") {
-                    TextField("Power Capacity", text: $powerCapacity)
-                        .placeholder(when: powerCapacity.isEmpty) {
-                            Text("e.g., 480V/3-phase/2000 amps")
-                        }
-                    
-                    Picker("Sprinkler System", selection: $sprinklerSystem) {
-                        ForEach(SprinklerSystem.allCases, id: \.self) { system in
-                            Text(system.rawValue).tag(system)
-                        }
+                        .onChange(of: zoning) { _, _ in hasUnsavedChanges = true }
+                        
+                        Toggle("Rail Access", isOn: $railAccess)
+                            .onChange(of: railAccess) { _, _ in hasUnsavedChanges = true }
                     }
                     
-                    Picker("Zoning", selection: $zoning) {
-                        ForEach(ZoningType.allCases, id: \.self) { zone in
-                            Text(zone.rawValue).tag(zone)
-                        }
+                    Section("Loading & Structural Details") {
+                        TextField("Column Spacing", text: $columnSpacing)
+                            .placeholder(when: columnSpacing.isEmpty) {
+                                Text("e.g., 40' x 50'")
+                            }
+                            .onChange(of: columnSpacing) { _, _ in hasUnsavedChanges = true }
+                        
+                        TextField("Truck Court Depth (feet)", value: $truckCourtDepth, format: .number)
+                            .keyboardType(.numberPad)
+                            .onChange(of: truckCourtDepth) { _, _ in hasUnsavedChanges = true }
+                        
+                        TextField("Crane Capacity (optional)", text: $craneCapacity)
+                            .placeholder(when: craneCapacity.isEmpty) {
+                                Text("e.g., 5 ton bridge crane")
+                            }
+                            .onChange(of: craneCapacity) { _, _ in hasUnsavedChanges = true }
                     }
                     
-                    TextField("Ceiling Type", text: $ceilingType)
-                        .placeholder(when: ceilingType.isEmpty) {
-                            Text("e.g., Concrete Tilt-Up")
-                        }
-                    
-                    TextField("Year Built", text: $yearBuilt)
-                        .keyboardType(.numberPad)
-                }
-                
-                Section("Office & Yard") {
-                    TextField("Office Square Footage", text: $officeSquareFootage)
-                        .keyboardType(.numberPad)
-                    
-                    TextField("Yard Size (square feet)", text: $yardSize)
-                        .keyboardType(.numberPad)
+                    Section("Building Details") {
+                        TextField("Ceiling Type", text: $ceilingType)
+                            .placeholder(when: ceilingType.isEmpty) {
+                                Text("e.g., Concrete Tilt-Up")
+                            }
+                            .onChange(of: ceilingType) { _, _ in hasUnsavedChanges = true }
+                        
+                        TextField("Year Built", text: $yearBuilt)
+                            .keyboardType(.numberPad)
+                            .onChange(of: yearBuilt) { _, _ in hasUnsavedChanges = true }
+                        
+                        TextField("Office Square Footage", text: $officeSquareFootage)
+                            .keyboardType(.numberPad)
+                            .onChange(of: officeSquareFootage) { _, _ in hasUnsavedChanges = true }
+                        
+                        TextField("Yard Size (square feet)", text: $yardSize)
+                            .keyboardType(.numberPad)
+                            .onChange(of: yardSize) { _, _ in hasUnsavedChanges = true }
+                    }
                 }
                 
                 Section {
@@ -237,9 +285,12 @@ struct AddEditPropertyView: View {
                     }
                 }
                 
-                Section("Description") {
-                    TextField("Property Description", text: $description, axis: .vertical)
-                        .lineLimit(3...6)
+                if showAdvanced {
+                    Section("Additional Details") {
+                        TextField("Property Description", text: $description, axis: .vertical)
+                            .lineLimit(3...6)
+                            .onChange(of: description) { _, _ in hasUnsavedChanges = true }
+                    }
                 }
             }
             .navigationTitle(isEditing ? "Edit Warehouse" : "New Warehouse")
@@ -312,12 +363,23 @@ struct AddEditPropertyView: View {
             if let property = property {
                 loadPropertyData(property)
             } else {
-                // Prefill city/state for new properties
+                // Smart defaults for new properties
                 if city.isEmpty && !lastCity.isEmpty {
                     city = lastCity
                 }
                 if state.isEmpty && !lastState.isEmpty {
                     state = lastState
+                }
+                
+                // Set intelligent defaults for better UX
+                if powerCapacity.isEmpty {
+                    powerCapacity = "480V/3-phase/1200 amps"
+                }
+                if ceilingType.isEmpty {
+                    ceilingType = "Concrete Tilt-Up"
+                }
+                if columnSpacing.isEmpty {
+                    columnSpacing = "40' x 50'"
                 }
             }
         }
