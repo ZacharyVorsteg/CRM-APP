@@ -7,17 +7,14 @@
 
 import SwiftUI
 import UIKit
-import Combine
 
 struct LeadsView: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var showingAddLead = false
     @State private var searchText = ""
-    @State private var debouncedSearchText = ""
-    @State private var searchCancellable: AnyCancellable?
     
     var filteredLeads: [Lead] {
-        let searchTerm = debouncedSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let searchTerm = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         
         if searchTerm.isEmpty {
             return dataManager.leads.sorted { $0.dateCreated > $1.dateCreated }
@@ -41,7 +38,7 @@ struct LeadsView: View {
                 // Leads List
                 if filteredLeads.isEmpty {
                     EmptyProspectsState(
-                        hasSearchTerm: !debouncedSearchText.isEmpty,
+                        hasSearchTerm: !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                         onAddProspect: { showingAddLead = true }
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -79,9 +76,6 @@ struct LeadsView: View {
             }
             .navigationTitle("Prospects")
             .navigationBarTitleDisplayMode(.inline)
-            .onAppear {
-                setupSearchDebouncing()
-            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddLead = true }) {
@@ -165,14 +159,6 @@ struct LeadsView: View {
         impactFeedback.impactOccurred()
     }
     
-    // MARK: - Search Debouncing
-    private func setupSearchDebouncing() {
-        searchCancellable = $searchText
-            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
-            .sink { newValue in
-                debouncedSearchText = newValue
-            }
-    }
 }
 
 // MARK: - Empty State
