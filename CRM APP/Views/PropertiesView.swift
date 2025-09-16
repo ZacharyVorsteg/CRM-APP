@@ -131,6 +131,7 @@ struct PropertiesView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(filteredProperties) { property in
                                 PropertyRowView(property: property)
+                                    .contentShape(Rectangle())
                                     .onTapGesture {
                                         selectedProperty = property
                                     }
@@ -143,6 +144,8 @@ struct PropertiesView: View {
                                             dataManager.deleteProperty(property)
                                         }
                                     }
+                                    .accessibilityLabel("\(property.address), \(property.formattedSquareFootage), \(property.formattedClearHeight), \(property.status.rawValue)")
+                                    .accessibilityHint("Tap to edit warehouse details")
                             }
                         }
                         .padding(.horizontal, 16)

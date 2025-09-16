@@ -12,20 +12,14 @@ struct LeadsView: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var showingAddLead = false
     @State private var searchText = ""
+    @State private var searchTask: Task<Void, Never>?
+    @State private var filteredResults: [Lead] = []
+    @State private var selectedStatus: LeadStatus?
     
     var filteredLeads: [Lead] {
-        let searchTerm = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        if searchTerm.isEmpty {
-            return dataManager.leads.sorted { $0.dateCreated > $1.dateCreated }
-        } else {
-            return dataManager.leads.filter {
-                $0.fullName.localizedCaseInsensitiveContains(searchTerm) ||
-                $0.email.localizedCaseInsensitiveContains(searchTerm) ||
-                $0.phone.localizedCaseInsensitiveContains(searchTerm) ||
-                $0.businessType.rawValue.localizedCaseInsensitiveContains(searchTerm)
-            }.sorted { $0.dateCreated > $1.dateCreated }
-        }
+        filteredResults.isEmpty && searchText.isEmpty ? 
+            dataManager.leads.sorted { $0.dateCreated > $1.dateCreated } : 
+            filteredResults
     }
     
     var body: some View {
@@ -34,6 +28,18 @@ struct LeadsView: View {
                 // Search Bar
                 SearchBar(text: $searchText)
                     .padding(.bottom, 8)
+                    .onChange(of: searchText) { newValue in
+                        applySearchFilter(newValue)
+                    }
+                
+                // Quick Filter Chips
+                StatusFilterChips(
+                    selectedStatus: $selectedStatus,
+                    statusCounts: getStatusCounts(),
+                    onClear: clearFilters
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
                 
                 // Leads List
                 if filteredLeads.isEmpty {
@@ -54,12 +60,13 @@ struct LeadsView: View {
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
+                                .contentShape(Rectangle())
                                 .swipeActions(edge: .trailing) {
                                     Button("Qualified") {
                                         hapticFeedback()
                                         markAsQualified(lead)
                                     }
-                                    .tint(.green)
+                                    .tint(.accentColor)
                                     
                                     Button("Delete", role: .destructive) {
                                         hapticFeedback()
@@ -67,6 +74,8 @@ struct LeadsView: View {
                                     }
                                     .tint(.red)
                                 }
+                                .accessibilityLabel("\(lead.fullName), \(lead.businessType.rawValue), \(lead.formattedRequiredSF), \(lead.status.rawValue)")
+                                .accessibilityHint("Tap to view prospect details")
                             }
                         }
                         .padding(.horizontal, 16)
@@ -76,6 +85,9 @@ struct LeadsView: View {
             }
             .navigationTitle("Prospects")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                filteredResults = dataManager.leads.sorted { $0.dateCreated > $1.dateCreated }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddLead = true }) {
@@ -159,6 +171,91 @@ struct LeadsView: View {
         impactFeedback.impactOccurred()
     }
     
+    // MARK: - Search
+    private func applySearchFilter(_ searchTerm: String) {
+        searchTask?.cancel()
+        
+        let trimmed = searchTerm.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: 220_000_000) // ~0.22s
+            
+            if Task.isCancelled { return }
+            
+            await MainActor.run {
+                var results = dataManager.leads
+                
+                // Apply status filter first
+                if let status = selectedStatus {
+                    results = results.filter { $0.status == status }
+                }
+                
+                // Apply search filter
+                if trimmed.count >= 2 {
+                    results = results.filter {
+                        $0.fullName.localizedCaseInsensitiveContains(trimmed) ||
+                        $0.email.localizedCaseInsensitiveContains(trimmed) ||
+                        $0.phone.localizedCaseInsensitiveContains(trimmed) ||
+                        $0.businessType.rawValue.localizedCaseInsensitiveContains(trimmed)
+                    }
+                }
+                
+                filteredResults = results.sorted { $0.dateCreated > $1.dateCreated }
+            }
+        }
+    }
+    
+    // MARK: - Filter Helpers
+    private func getStatusCounts() -> [LeadStatus: Int] {
+        Dictionary(grouping: dataManager.leads) { $0.status }
+            .mapValues { $0.count }
+    }
+    
+    private func clearFilters() {
+        selectedStatus = nil
+        searchText = ""
+        filteredResults = dataManager.leads.sorted { $0.dateCreated > $1.dateCreated }
+    }
+}
+
+// MARK: - Status Filter Chips
+private struct StatusFilterChips: View {
+    @Binding var selectedStatus: LeadStatus?
+    let statusCounts: [LeadStatus: Int]
+    let onClear: () -> Void
+    
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                // Clear chip
+                Button("Clear") {
+                    onClear()
+                }
+                .font(.caption)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(selectedStatus == nil ? Color.accentColor : Color(.systemGray5))
+                .foregroundColor(selectedStatus == nil ? .white : .primary)
+                .clipShape(Capsule())
+                
+                ForEach(LeadStatus.allCases, id: \.self) { status in
+                    let count = statusCounts[status] ?? 0
+                    if count > 0 {
+                        Button("\(status.rawValue) (\(count))") {
+                            selectedStatus = selectedStatus == status ? nil : status
+                        }
+                        .font(.caption)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(selectedStatus == status ? Color.accentColor : Color(.systemGray5))
+                        .foregroundColor(selectedStatus == status ? .white : .primary)
+                        .clipShape(Capsule())
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+    }
 }
 
 // MARK: - Empty State

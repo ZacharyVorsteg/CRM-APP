@@ -36,6 +36,10 @@ struct AddEditPropertyView: View {
     @State private var yearBuilt = ""
     @State private var availableDate = Date()
     @State private var description = ""
+    @State private var hasUnsavedChanges = false
+    @FocusState private var focusedField: PropertyField?
+    @AppStorage("lastPropertyCity") private var lastCity = ""
+    @AppStorage("lastPropertyState") private var lastState = ""
     
     var isEditing: Bool {
         property != nil
@@ -47,15 +51,46 @@ struct AddEditPropertyView: View {
         Int(squareFootage) != nil && Double(clearHeight) != nil && Decimal(string: askingRate) != nil
     }
     
+    enum PropertyField {
+        case address, city, state, zipCode, squareFootage, clearHeight, askingRate
+    }
+    
     var body: some View {
         NavigationView {
             Form {
                 Section("Property Address") {
-                    TextField("Street Address", text: $address)
-                    TextField("City", text: $city)
-                    TextField("State", text: $state)
-                    TextField("ZIP Code", text: $zipCode)
-                        .keyboardType(.numberPad)
+                    VStack(alignment: .leading, spacing: 4) {
+                        if UIPasteboard.general.hasStrings, let pasteText = UIPasteboard.general.string, looksLikeAddress(pasteText) {
+                            Button("📋 Paste Address") {
+                                parseAndFillAddress(pasteText)
+                            }
+                            .font(.caption)
+                            .foregroundColor(.accentColor)
+                        }
+                        
+                        TextField("Street Address", text: $address)
+                            .focused($focusedField, equals: .address)
+                            .textContentType(.streetAddressLine1)
+                            .onChange(of: address) { _ in hasUnsavedChanges = true }
+                        
+                        HStack {
+                            TextField("City", text: $city)
+                                .focused($focusedField, equals: .city)
+                                .textContentType(.addressCity)
+                                .onChange(of: city) { _ in hasUnsavedChanges = true }
+                            
+                            TextField("State", text: $state)
+                                .focused($focusedField, equals: .state)
+                                .textContentType(.addressState)
+                                .onChange(of: state) { _ in hasUnsavedChanges = true }
+                        }
+                        
+                        TextField("ZIP Code", text: $zipCode)
+                            .focused($focusedField, equals: .zipCode)
+                            .keyboardType(.numberPad)
+                            .textContentType(.postalCode)
+                            .onChange(of: zipCode) { _ in hasUnsavedChanges = true }
+                    }
                 }
                 
                 Section("Warehouse Specifications") {
@@ -136,8 +171,40 @@ struct AddEditPropertyView: View {
                         .lineLimit(3...6)
                 }
             }
-            .navigationTitle(isEditing ? "Edit Property" : "New Property")
+            .navigationTitle(isEditing ? "Edit Warehouse" : "New Warehouse")
             .navigationBarTitleDisplayMode(.inline)
+            .safeAreaInset(edge: .bottom) {
+                if hasUnsavedChanges {
+                    StickySaveBar(
+                        isValid: isFormValid,
+                        onSave: { 
+                            if validateAndSave() {
+                                hasUnsavedChanges = false
+                            }
+                        },
+                        onCancel: { dismiss() }
+                    )
+                }
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Button("Previous") {
+                        focusPreviousField()
+                    }
+                    .disabled(focusedField == .address)
+                    
+                    Button("Next") {
+                        focusNextField()
+                    }
+                    .disabled(focusedField == .askingRate)
+                    
+                    Spacer()
+                    
+                    Button("Done") {
+                        focusedField = nil
+                    }
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -159,6 +226,14 @@ struct AddEditPropertyView: View {
         .onAppear {
             if let property = property {
                 loadPropertyData(property)
+            } else {
+                // Prefill city/state for new properties
+                if city.isEmpty && !lastCity.isEmpty {
+                    city = lastCity
+                }
+                if state.isEmpty && !lastState.isEmpty {
+                    state = lastState
+                }
             }
         }
     }
@@ -266,7 +341,110 @@ struct AddEditPropertyView: View {
         guard rate > 0 && rate <= 100 else { return false }
         
         saveProperty()
+        
+        // Remember city/state for next time
+        lastCity = city.trimmingCharacters(in: .whitespacesAndNewlines)
+        lastState = state.trimmingCharacters(in: .whitespacesAndNewlines)
+        
         return true
+    }
+    
+    // MARK: - Address Parsing
+    private func looksLikeAddress(_ text: String) -> Bool {
+        let addressPattern = #"^\d+\s+[A-Za-z\s]+,?\s*[A-Za-z\s]+,?\s*[A-Z]{2}\s*\d{5}"#
+        return text.range(of: addressPattern, options: .regularExpression) != nil
+    }
+    
+    private func parseAndFillAddress(_ text: String) {
+        guard let parsed = parseAddress(text) else { return }
+        
+        address = parsed.street
+        city = parsed.city
+        state = parsed.state
+        zipCode = parsed.zip
+        hasUnsavedChanges = true
+        
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
+    }
+    
+    private func parseAddress(_ text: String) -> ParsedAddress? {
+        // Simple regex-based parsing
+        let components = text.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        
+        guard components.count >= 3 else { return nil }
+        
+        let street = components[0]
+        let city = components[1]
+        let stateZip = components[2].components(separatedBy: " ")
+        
+        guard stateZip.count >= 2 else { return nil }
+        
+        let state = stateZip[0]
+        let zip = stateZip[1]
+        
+        return ParsedAddress(street: street, city: city, state: state, zip: zip)
+    }
+    
+    // MARK: - Focus Management
+    private func focusNextField() {
+        switch focusedField {
+        case .address: focusedField = .city
+        case .city: focusedField = .state
+        case .state: focusedField = .zipCode
+        case .zipCode: focusedField = .squareFootage
+        case .squareFootage: focusedField = .clearHeight
+        case .clearHeight: focusedField = .askingRate
+        case .askingRate: focusedField = nil
+        case .none: focusedField = .address
+        }
+    }
+    
+    private func focusPreviousField() {
+        switch focusedField {
+        case .askingRate: focusedField = .clearHeight
+        case .clearHeight: focusedField = .squareFootage
+        case .squareFootage: focusedField = .zipCode
+        case .zipCode: focusedField = .state
+        case .state: focusedField = .city
+        case .city: focusedField = .address
+        case .address: focusedField = nil
+        case .none: focusedField = .askingRate
+        }
+    }
+}
+
+// MARK: - Helper Structures
+private struct ParsedAddress {
+    let street: String
+    let city: String
+    let state: String
+    let zip: String
+}
+
+private struct StickySaveBar: View {
+    let isValid: Bool
+    let onSave: () -> Void
+    let onCancel: () -> Void
+    
+    var body: some View {
+        HStack {
+            Button("Cancel") {
+                onCancel()
+            }
+            .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            Button("Save") {
+                onSave()
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!isValid)
+        }
+        .padding()
+        .background(.regularMaterial)
+        .accessibilityElement(children: .contain)
     }
 }
 
