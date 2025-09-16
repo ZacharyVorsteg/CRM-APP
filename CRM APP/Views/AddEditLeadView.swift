@@ -50,10 +50,17 @@ struct AddEditLeadView: View {
     }
     
     var hasAdvancedData: Bool {
-        !currentFacilitySize.isEmpty || !annualThroughput.isEmpty || !fleetSize.isEmpty ||
-        shift24Hour || targetMoveDate != nil || !estimatedValue.isEmpty || 
-        !propertyAddress.isEmpty || !notes.isEmpty || status != .new || source != .website ||
-        temperatureRequirements != .ambient
+        (!currentFacilitySize.isEmpty) || 
+        (!annualThroughput.isEmpty) || 
+        (!fleetSize.isEmpty) ||
+        shift24Hour || 
+        (targetMoveDate != nil) || 
+        (!estimatedValue.isEmpty) || 
+        (!propertyAddress.isEmpty) || 
+        (!notes.isEmpty) || 
+        (status != .new) || 
+        (source != .website) ||
+        (temperatureRequirements != .ambient)
     }
     
     var body: some View {

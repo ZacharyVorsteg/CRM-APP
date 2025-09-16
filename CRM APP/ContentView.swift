@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var showQuickAddDialog = false
     @AppStorage("defaultQuickAdd") private var defaultQuickAdd = "Lead"
     @State private var keyboardHeight: CGFloat = 0
+    @State private var showSetFavoriteDialog = false
     
     var body: some View {
         ZStack {
@@ -59,7 +60,7 @@ struct ContentView: View {
                     HStack {
                         Spacer()
                         QuickAddButton(
-                            onTap: handleQuickAddTap,
+                            onTap: { showQuickAddDialog = true },
                             onLongPress: { showQuickAddDialog = true },
                             defaultType: defaultQuickAdd
                         )
@@ -82,29 +83,47 @@ struct ContentView: View {
             AddEditDealView(deal: nil)
         }
         .confirmationDialog("Quick Add", isPresented: $showQuickAddDialog) {
-            Button("New Prospect") {
+            Button("🏢 New Prospect") {
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
                 showNewLead = true
             }
-            Button("New Warehouse") {
+            Button("🏭 New Warehouse") {
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
                 showNewProperty = true
             }
-            Button("New Lease") {
+            Button("📄 New Lease") {
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
                 showNewDeal = true
             }
-            Menu("Set Default") {
-                Button("Prospect") {
-                    defaultQuickAdd = "Lead"
-                }
-                Button("Warehouse") {
-                    defaultQuickAdd = "Property"
-                }
-                Button("Lease") {
-                    defaultQuickAdd = "Deal"
-                }
+            Button("⚙️ Set Favorite") {
+                showSetFavoriteDialog = true
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("Choose what to add")
+            Text("What would you like to add?")
+        }
+        .confirmationDialog("Set Favorite Quick Add", isPresented: $showSetFavoriteDialog) {
+            Button("🏢 Prospect (Most Common)") {
+                defaultQuickAdd = "Lead"
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            }
+            Button("🏭 Warehouse") {
+                defaultQuickAdd = "Property"
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            }
+            Button("📄 Lease") {
+                defaultQuickAdd = "Deal"
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Choose your most frequently added item")
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
             if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
@@ -118,7 +137,7 @@ struct ContentView: View {
     
     // MARK: - Computed Properties
     private var anySheetIsPresented: Bool {
-        showingQuickAdd || showNewLead || showNewProperty || showNewDeal || showQuickAddDialog
+        showingQuickAdd || showNewLead || showNewProperty || showNewDeal || showQuickAddDialog || showSetFavoriteDialog
     }
     
     // MARK: - Quick Add Helpers
@@ -146,36 +165,28 @@ private struct QuickAddButton: View {
     let defaultType: String
     
     private var buttonIcon: String {
-        switch defaultType {
-        case "Lead": return "person.badge.plus"
-        case "Deal": return "doc.text.badge.plus"
-        default: return "building.2.badge.plus"
-        }
+        return "plus.circle.fill"
     }
     
     private var buttonLabel: String {
-        switch defaultType {
-        case "Lead": return "Add Prospect"
-        case "Deal": return "Add Lease"
-        default: return "Add Warehouse"
-        }
+        return "Quick Add"
     }
     
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 Image(systemName: buttonIcon)
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .font(.title)
+                    .fontWeight(.medium)
                     .foregroundColor(.white)
                 
-                Text(buttonLabel.replacingOccurrences(of: "Add ", with: ""))
-                    .font(.caption2)
+                Text(buttonLabel)
+                    .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(.white)
                     .lineLimit(1)
             }
-            .frame(width: 72, height: 72)
+            .frame(width: 64, height: 64)
             .background(
                 LinearGradient(
                     gradient: Gradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)]),
@@ -183,10 +194,10 @@ private struct QuickAddButton: View {
                     endPoint: .bottomTrailing
                 )
             )
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .clipShape(Circle())
             .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
         }
-        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .contentShape(Circle())
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5)
                 .onEnded { _ in
