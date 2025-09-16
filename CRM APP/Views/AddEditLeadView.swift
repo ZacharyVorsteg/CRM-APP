@@ -60,7 +60,7 @@ struct AddEditLeadView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(fieldErrors.contains("firstName") ? Color.red : Color.clear, lineWidth: 1)
                                 )
-                                .onChange(of: firstName) { _ in
+                                .onChange(of: firstName) { _, _ in
                                     fieldErrors.remove("firstName")
                                 }
                             
@@ -70,7 +70,7 @@ struct AddEditLeadView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(fieldErrors.contains("lastName") ? Color.red : Color.clear, lineWidth: 1)
                                 )
-                                .onChange(of: lastName) { _ in
+                                .onChange(of: lastName) { _, _ in
                                     fieldErrors.remove("lastName")
                                 }
                         }
@@ -83,7 +83,7 @@ struct AddEditLeadView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(fieldErrors.contains("email") ? Color.red : Color.clear, lineWidth: 1)
                             )
-                            .onChange(of: email) { _ in
+                            .onChange(of: email) { _, _ in
                                 fieldErrors.remove("email")
                             }
                         
@@ -94,7 +94,7 @@ struct AddEditLeadView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(fieldErrors.contains("phone") ? Color.red : Color.clear, lineWidth: 1)
                             )
-                            .onChange(of: phone) { _ in
+                            .onChange(of: phone) { _, _ in
                                 fieldErrors.remove("phone")
                             }
                     }
@@ -130,7 +130,7 @@ struct AddEditLeadView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(fieldErrors.contains("requiredSF") ? Color.red : Color.clear, lineWidth: 1)
                                 )
-                                .onChange(of: requiredSquareFootage) { _ in
+                                .onChange(of: requiredSquareFootage) { _, _ in
                                     fieldErrors.remove("requiredSF")
                                 }
                             

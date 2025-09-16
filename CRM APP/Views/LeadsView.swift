@@ -28,7 +28,7 @@ struct LeadsView: View {
                 // Search Bar
                 SearchBar(text: $searchText)
                     .padding(.bottom, 8)
-                    .onChange(of: searchText) { newValue in
+                    .onChange(of: searchText) { _, newValue in
                         applySearchFilter(newValue)
                     }
                 

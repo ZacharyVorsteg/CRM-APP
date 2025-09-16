@@ -54,7 +54,7 @@ struct ValidatedTextField: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(hasError ? Color.red : Color.clear, lineWidth: 2)
                 )
-                .onChange(of: text) { _ in
+                .onChange(of: text) { _, _ in
                     onChanged()
                 }
         }
