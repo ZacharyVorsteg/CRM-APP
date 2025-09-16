@@ -15,7 +15,7 @@ struct ContentView: View {
     @State private var showNewProperty = false
     @State private var showNewDeal = false
     @State private var showQuickAddDialog = false
-    @AppStorage("defaultQuickAdd") private var defaultQuickAdd = "Property"
+    @AppStorage("defaultQuickAdd") private var defaultQuickAdd = "Lead"
     @State private var keyboardHeight: CGFloat = 0
     
     var body: some View {
@@ -60,7 +60,8 @@ struct ContentView: View {
                         Spacer()
                         QuickAddButton(
                             onTap: handleQuickAddTap,
-                            onLongPress: { showQuickAddDialog = true }
+                            onLongPress: { showQuickAddDialog = true },
+                            defaultType: defaultQuickAdd
                         )
                     }
                     .padding(.trailing, 20)
@@ -90,8 +91,16 @@ struct ContentView: View {
             Button("New Lease") {
                 showNewDeal = true
             }
-            Button("Set Default") {
-                // Opens submenu
+            Menu("Set Default") {
+                Button("Prospect") {
+                    defaultQuickAdd = "Lead"
+                }
+                Button("Warehouse") {
+                    defaultQuickAdd = "Property"
+                }
+                Button("Lease") {
+                    defaultQuickAdd = "Deal"
+                }
             }
             Button("Cancel", role: .cancel) { }
         } message: {
@@ -134,25 +143,50 @@ struct ContentView: View {
 private struct QuickAddButton: View {
     let onTap: () -> Void
     let onLongPress: () -> Void
+    let defaultType: String
+    
+    private var buttonIcon: String {
+        switch defaultType {
+        case "Lead": return "person.badge.plus"
+        case "Deal": return "doc.text.badge.plus"
+        default: return "building.2.badge.plus"
+        }
+    }
+    
+    private var buttonLabel: String {
+        switch defaultType {
+        case "Lead": return "Add Prospect"
+        case "Deal": return "Add Lease"
+        default: return "Add Warehouse"
+        }
+    }
     
     var body: some View {
         Button(action: onTap) {
-            Image(systemName: "plus")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .frame(width: 56, height: 56)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+            VStack(spacing: 4) {
+                Image(systemName: buttonIcon)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                
+                Text(buttonLabel.replacingOccurrences(of: "Add ", with: ""))
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+            }
+            .frame(width: 72, height: 72)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
         }
-        .contentShape(Circle())
+        .contentShape(RoundedRectangle(cornerRadius: 16))
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5)
                 .onEnded { _ in
@@ -161,8 +195,8 @@ private struct QuickAddButton: View {
                     onLongPress()
                 }
         )
-        .accessibilityLabel("Quick Add")
-        .accessibilityHint("Tap to add new item, long press for options")
+        .accessibilityLabel(buttonLabel)
+        .accessibilityHint("Tap to \(buttonLabel.lowercased()), long press for options")
     }
 }
 
