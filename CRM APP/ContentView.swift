@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var showNewDeal = false
     @State private var showQuickAddDialog = false
     @AppStorage("defaultQuickAdd") private var defaultQuickAdd = "Property"
+    @State private var keyboardHeight: CGFloat = 0
     
     var body: some View {
         ZStack {
@@ -23,24 +24,28 @@ struct ContentView: View {
                 DashboardView()
                     .tabItem {
                         Image(systemName: "chart.bar.fill")
+                            .symbolRenderingMode(.hierarchical)
                         Text("Dashboard")
                     }
                 
                 LeadsView()
                     .tabItem {
                         Image(systemName: "person.3.fill")
+                            .symbolRenderingMode(.hierarchical)
                         Text("Prospects")
                     }
                 
                 PropertiesView()
                     .tabItem {
                         Image(systemName: "building.2.fill")
+                            .symbolRenderingMode(.hierarchical)
                         Text("Warehouses")
                     }
                 
                 DealsView()
                     .tabItem {
                         Image(systemName: "doc.text.fill")
+                            .symbolRenderingMode(.hierarchical)
                         Text("Leases")
                     }
             }
@@ -48,14 +53,16 @@ struct ContentView: View {
             .tint(.accentColor)
             
             // Global Quick Add Button
-            VStack {
-                Spacer()
-                HStack {
+            if !anySheetIsPresented && keyboardHeight == 0 {
+                VStack {
                     Spacer()
-                    QuickAddButton(
-                        onTap: handleQuickAddTap,
-                        onLongPress: { showQuickAddDialog = true }
-                    )
+                    HStack {
+                        Spacer()
+                        QuickAddButton(
+                            onTap: handleQuickAddTap,
+                            onLongPress: { showQuickAddDialog = true }
+                        )
+                    }
                     .padding(.trailing, 20)
                     .padding(.bottom, 100)
                 }
@@ -90,6 +97,19 @@ struct ContentView: View {
         } message: {
             Text("Choose what to add")
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+            if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                keyboardHeight = keyboardFrame.height
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardHeight = 0
+        }
+    }
+    
+    // MARK: - Computed Properties
+    private var anySheetIsPresented: Bool {
+        showingQuickAdd || showNewLead || showNewProperty || showNewDeal || showQuickAddDialog
     }
     
     // MARK: - Quick Add Helpers

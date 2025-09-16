@@ -231,9 +231,9 @@ private struct StatusFilterChips: View {
                 Button("Clear") {
                     onClear()
                 }
-                .font(.caption)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .font(.footnote)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
                 .background(selectedStatus == nil ? Color.accentColor : Color(.systemGray5))
                 .foregroundColor(selectedStatus == nil ? .white : .primary)
                 .clipShape(Capsule())
@@ -244,9 +244,9 @@ private struct StatusFilterChips: View {
                         Button("\(status.rawValue) (\(count))") {
                             selectedStatus = selectedStatus == status ? nil : status
                         }
-                        .font(.caption)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .font(.footnote)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                         .background(selectedStatus == status ? Color.accentColor : Color(.systemGray5))
                         .foregroundColor(selectedStatus == status ? .white : .primary)
                         .clipShape(Capsule())
@@ -342,72 +342,73 @@ struct LeadRowView: View {
                 .frame(width: 12, height: 12)
             
             VStack(alignment: .leading, spacing: 6) {
-                // Name and Business Type
-                HStack {
-                    Text(lead.fullName)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    Spacer()
-                    
-                    if let (urgencyText, urgencyColor) = urgencyIndicator {
-                        Text(urgencyText)
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(urgencyColor)
-                            .cornerRadius(8)
-                    }
-                }
-                
-                // Key Info Row
-                HStack(spacing: 16) {
-                    Text(lead.businessType.rawValue)
-                        .font(.subheadline)
-                        .foregroundColor(.blue)
-                        .fontWeight(.medium)
-                    
-                    Text(lead.formattedRequiredSF)
-                        .font(.subheadline)
-                        .foregroundColor(.orange)
-                        .fontWeight(.medium)
-                    
-                    if lead.shift24Hour {
-                        Text("24/7")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.purple)
-                            .cornerRadius(4)
-                    }
-                    
-                    Spacer()
-                }
-                
-                // Timeline and Match Info
-                HStack {
-                    Text(lead.expansionTimeline.rawValue)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    if !matchSummary.isEmpty && matchSummary != "No matches found" {
-                        Text(matchSummary)
-                            .font(.caption)
-                            .foregroundColor(.green)
-                            .fontWeight(.medium)
-                    }
-                    
-                    if let value = lead.estimatedValue {
-                        Text(formatCurrency(value))
-                            .font(.caption)
+                VStack(alignment: .leading, spacing: 6) {
+                    // Name and urgency
+                    HStack {
+                        Text(lead.fullName)
+                            .font(.body)
                             .fontWeight(.semibold)
-                            .foregroundColor(.green)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.9)
+                        
+                        Spacer()
+                        
+                        if let (urgencyText, urgencyColor) = urgencyIndicator {
+                            Text(urgencyText)
+                                .font(.footnote)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(urgencyColor)
+                                .clipShape(Capsule())
+                        }
+                    }
+                    
+                    // Business type and requirements
+                    HStack(spacing: 12) {
+                        Text(lead.businessType.rawValue)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        
+                        Text("•")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        
+                        Text(lead.formattedRequiredSF)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        
+                        if lead.shift24Hour {
+                            Text("• 24/7")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        if let value = lead.estimatedValue {
+                            Text(formatCurrency(value))
+                                .font(.footnote)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    
+                    // Timeline and match info
+                    HStack {
+                        Text(lead.expansionTimeline.rawValue)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        
+                        Spacer()
+                        
+                        if !matchSummary.isEmpty && matchSummary != "No matches found" {
+                            Text(matchSummary)
+                                .font(.footnote)
+                                .foregroundColor(.accentColor)
+                                .fontWeight(.medium)
+                        }
                     }
                 }
             }
@@ -433,11 +434,12 @@ struct LeadRowView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
         .background(Color(.systemBackground))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(urgencyIndicator?.1.opacity(0.3) ?? Color(.systemGray4), lineWidth: 2)
+                .stroke(urgencyIndicator?.1.opacity(0.3) ?? Color(.systemGray4), lineWidth: 1)
         )
         .cornerRadius(12)
     }

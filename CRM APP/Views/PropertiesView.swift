@@ -229,13 +229,14 @@ struct PropertyRowView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(property.address)
-                        .font(.headline)
+                        .font(.body)
                         .fontWeight(.semibold)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.9)
                     
                     Text("\(property.city), \(property.state)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
@@ -261,35 +262,32 @@ struct PropertyRowView: View {
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("SIZE")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                            .fontWeight(.medium)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                         Text(property.formattedSquareFootage)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.blue)
+                            .font(.footnote)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("HEIGHT")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                            .fontWeight(.medium)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                         Text(property.formattedClearHeight)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.orange)
+                            .font(.footnote)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("DOCKS")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                            .fontWeight(.medium)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                         Text("\(property.loadingDocks)")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.purple)
+                            .font(.footnote)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
                     }
                     
                     if property.railAccess {
@@ -335,7 +333,8 @@ struct PropertyRowView: View {
                     .foregroundColor(.secondary)
             }
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
         .background(Color(.systemBackground))
         .overlay(
             RoundedRectangle(cornerRadius: 12)

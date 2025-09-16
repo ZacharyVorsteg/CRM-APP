@@ -40,6 +40,8 @@ struct AddEditPropertyView: View {
     @FocusState private var focusedField: PropertyField?
     @AppStorage("lastPropertyCity") private var lastCity = ""
     @AppStorage("lastPropertyState") private var lastState = ""
+    @State private var showingPasteConfirmation = false
+    @State private var pendingParsedAddress: ParsedAddress?
     
     var isEditing: Bool {
         property != nil
@@ -59,13 +61,25 @@ struct AddEditPropertyView: View {
         NavigationView {
             Form {
                 Section("Property Address") {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if UIPasteboard.general.hasStrings, let pasteText = UIPasteboard.general.string, looksLikeAddress(pasteText) {
-                            Button("📋 Paste Address") {
-                                parseAndFillAddress(pasteText)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Property Address")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                            
+                            Spacer()
+                            
+                            if UIPasteboard.general.hasStrings, let pasteText = UIPasteboard.general.string, looksLikeAddress(pasteText) {
+                                Button("📋 Paste Address") {
+                                    handlePasteAddress(pasteText)
+                                }
+                                .font(.footnote)
+                                .foregroundColor(.accentColor)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(.accentColor.opacity(0.1))
+                                .clipShape(Capsule())
                             }
-                            .font(.caption)
-                            .foregroundColor(.accentColor)
                         }
                         
                         TextField("Street Address", text: $address)
@@ -93,12 +107,47 @@ struct AddEditPropertyView: View {
                     }
                 }
                 
-                Section("Warehouse Specifications") {
-                    TextField("Square Footage", text: $squareFootage)
-                        .keyboardType(.numberPad)
-                    
-                    TextField("Clear Height (feet)", text: $clearHeight)
-                        .keyboardType(.decimalPad)
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Warehouse Specifications")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        
+                        HStack {
+                            TextField("Square Footage", text: $squareFootage)
+                                .focused($focusedField, equals: .squareFootage)
+                                .keyboardType(.numberPad)
+                                .onChange(of: squareFootage) { _ in hasUnsavedChanges = true }
+                            
+                            Text("SF")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        if squareFootage.isEmpty {
+                            Text("Required")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        HStack {
+                            TextField("Clear Height", text: $clearHeight)
+                                .focused($focusedField, equals: .clearHeight)
+                                .keyboardType(.decimalPad)
+                                .onChange(of: clearHeight) { _ in hasUnsavedChanges = true }
+                            
+                            Text("ft")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        if clearHeight.isEmpty {
+                            Text("Required")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
                     
                     Stepper("Loading Docks: \(loadingDocks)", value: $loadingDocks, in: 0...50)
                     
@@ -153,17 +202,38 @@ struct AddEditPropertyView: View {
                         .keyboardType(.numberPad)
                 }
                 
-                Section("Lease Terms") {
-                    Picker("Status", selection: $status) {
-                        ForEach(PropertyStatus.allCases, id: \.self) { status in
-                            Text(status.rawValue).tag(status)
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Lease Terms")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        
+                        Picker("Status", selection: $status) {
+                            ForEach(PropertyStatus.allCases, id: \.self) { status in
+                                Text(status.rawValue).tag(status)
+                            }
                         }
+                        
+                        HStack {
+                            TextField("Asking Rate", text: $askingRate)
+                                .focused($focusedField, equals: .askingRate)
+                                .keyboardType(.decimalPad)
+                                .onChange(of: askingRate) { _ in hasUnsavedChanges = true }
+                            
+                            Text("$/SF/Year")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        if askingRate.isEmpty {
+                            Text("Required")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        DatePicker("Available Date", selection: $availableDate, displayedComponents: .date)
+                            .onChange(of: availableDate) { _ in hasUnsavedChanges = true }
                     }
-                    
-                    TextField("Asking Rate ($/SF/Year)", text: $askingRate)
-                        .keyboardType(.decimalPad)
-                    
-                    DatePicker("Available Date", selection: $availableDate, displayedComponents: .date)
                 }
                 
                 Section("Description") {
@@ -174,11 +244,13 @@ struct AddEditPropertyView: View {
             .navigationTitle(isEditing ? "Edit Warehouse" : "New Warehouse")
             .navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
-                if hasUnsavedChanges {
+                if hasUnsavedChanges && focusedField != nil {
                     StickySaveBar(
                         isValid: isFormValid,
                         onSave: { 
                             if validateAndSave() {
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                impactFeedback.impactOccurred()
                                 hasUnsavedChanges = false
                             }
                         },
@@ -221,6 +293,18 @@ struct AddEditPropertyView: View {
                     }
                     .disabled(!isFormValid)
                 }
+            }
+        }
+        .confirmationDialog("Paste Address", isPresented: $showingPasteConfirmation) {
+            Button("Replace Address Fields") {
+                if let parsed = pendingParsedAddress {
+                    fillAddressFields(parsed)
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            if let parsed = pendingParsedAddress {
+                Text("Replace with: \(parsed.street), \(parsed.city), \(parsed.state) \(parsed.zip)")
             }
         }
         .onAppear {
@@ -355,9 +439,21 @@ struct AddEditPropertyView: View {
         return text.range(of: addressPattern, options: .regularExpression) != nil
     }
     
-    private func parseAndFillAddress(_ text: String) {
+    private func handlePasteAddress(_ text: String) {
         guard let parsed = parseAddress(text) else { return }
         
+        // Check if any fields have content
+        let hasExistingContent = !address.isEmpty || !city.isEmpty || !state.isEmpty || !zipCode.isEmpty
+        
+        if hasExistingContent {
+            pendingParsedAddress = parsed
+            showingPasteConfirmation = true
+        } else {
+            fillAddressFields(parsed)
+        }
+    }
+    
+    private func fillAddressFields(_ parsed: ParsedAddress) {
         address = parsed.street
         city = parsed.city
         state = parsed.state
@@ -428,22 +524,30 @@ private struct StickySaveBar: View {
     let onCancel: () -> Void
     
     var body: some View {
-        HStack {
-            Button("Cancel") {
-                onCancel()
-            }
-            .foregroundColor(.secondary)
+        VStack(spacing: 0) {
+            Divider()
             
-            Spacer()
-            
-            Button("Save") {
-                onSave()
+            HStack {
+                Button("Cancel") {
+                    onCancel()
+                }
+                .font(.body)
+                .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Button("Save Warehouse") {
+                    onSave()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!isValid)
+                .font(.headline)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(!isValid)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .padding()
-        .background(.regularMaterial)
+        .frame(height: 56)
+        .background(.bar)
         .accessibilityElement(children: .contain)
     }
 }
