@@ -149,6 +149,7 @@ struct AddEditLeadView: View {
                             }
                         }
                         
+                        // BASIC FIELDS ONLY
                         Picker("Business Type", selection: $businessType) {
                             ForEach(BusinessType.allCases, id: \.self) { type in
                                 Text(type.rawValue).tag(type)
