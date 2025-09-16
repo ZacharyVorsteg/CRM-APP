@@ -37,10 +37,10 @@ extension CDLead {
         lead.shift24Hour = shift24Hour
         lead.targetMoveDate = targetMoveDate
         
-        // Budget fields
-        lead.budgetRange = BudgetRange(rawValue: budgetRange ?? "") ?? .tbd
-        lead.maxBudgetPerSF = maxBudgetPerSF as Decimal?
-        lead.totalAnnualBudget = totalAnnualBudget as Decimal?
+        // Budget fields (using existing estimatedValue field temporarily until Core Data model is updated)
+        lead.budgetRange = .tbd // Default until Core Data model supports budget fields
+        lead.maxBudgetPerSF = nil
+        lead.totalAnnualBudget = nil
         
         return lead
     }
@@ -70,10 +70,15 @@ extension CDLead {
         self.shift24Hour = lead.shift24Hour
         self.targetMoveDate = lead.targetMoveDate
         
-        // Budget fields
-        self.budgetRange = lead.budgetRange.rawValue
-        self.maxBudgetPerSF = lead.maxBudgetPerSF as NSDecimalNumber?
-        self.totalAnnualBudget = lead.totalAnnualBudget as NSDecimalNumber?
+        // Budget fields (Core Data model needs to be updated to include these fields)
+        // For now, we'll store budget info in the estimatedValue field
+        if let totalBudget = lead.totalAnnualBudget {
+            self.estimatedValue = Double(truncating: totalBudget as NSNumber)
+        } else if let budgetPerSF = lead.maxBudgetPerSF {
+            self.estimatedValue = Double(truncating: budgetPerSF as NSNumber) * Double(lead.requiredSquareFootage)
+        } else {
+            self.estimatedValue = lead.budgetRange.midpoint
+        }
     }
 }
 

@@ -356,7 +356,6 @@ struct LeadRowView: View {
                 .frame(width: 12, height: 12)
             
             VStack(alignment: .leading, spacing: 6) {
-                VStack(alignment: .leading, spacing: 6) {
                     // Name and urgency
                     HStack {
                         Text(lead.fullName)
@@ -430,7 +429,6 @@ struct LeadRowView: View {
                         }
                     }
                 }
-            }
             
             // Quick Action Buttons
             VStack(spacing: 8) {
