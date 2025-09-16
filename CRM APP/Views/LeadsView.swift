@@ -179,7 +179,7 @@ struct LeadsView: View {
     
     private func archiveProspect(_ lead: Lead) {
         var updatedLead = lead
-        updatedLead.status = .lost
+        updatedLead.status = .dead
         updatedLead.notes = "Archived \(Date().formatted(date: .abbreviated, time: .omitted)). \(updatedLead.notes)"
         
         dataManager.updateLead(updatedLead)

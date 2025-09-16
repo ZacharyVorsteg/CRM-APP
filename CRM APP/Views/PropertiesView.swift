@@ -32,6 +32,7 @@ struct PropertiesView: View {
         case price = "Price"
         case location = "Location"
     }
+    
     @State private var showingAddProperty = false
     @State private var selectedProperty: Property?
     @State private var searchText = ""
@@ -41,106 +42,30 @@ struct PropertiesView: View {
     @State private var railAccessOnly = false
     @State private var sortBy: PropertySort = .dateAdded
     
-    enum SizeRange: String, CaseIterable {
-        case all = "All Sizes"
-        case small = "< 25K SF"
-        case medium = "25K - 50K SF"
-        case large = "50K - 100K SF"
-        case xlarge = "> 100K SF"
-    }
-    
-    enum ClearHeightRange: String, CaseIterable {
-        case all = "All Heights"
-        case low = "< 24'"
-        case medium = "24' - 32'"
-        case high = "> 32'"
-    }
-    
-    enum PropertySort: String, CaseIterable {
-        case dateAdded = "Date Added"
-        case size = "Size"
-        case rate = "Rate"
-        case daysOnMarket = "Days on Market"
-    }
-    
-    var filteredProperties: [Property] {
-        var filtered = dataManager.properties
-        
-        // Text search
-        if !searchText.isEmpty {
-            filtered = filtered.filter {
-                $0.address.localizedCaseInsensitiveContains(searchText) ||
-                $0.city.localizedCaseInsensitiveContains(searchText) ||
-                $0.zipCode.localizedCaseInsensitiveContains(searchText) ||
-                $0.zoning.rawValue.localizedCaseInsensitiveContains(searchText)
-            }
-        }
-        
-        // Size filter
-        switch sizeFilter {
-        case .small:
-            filtered = filtered.filter { $0.squareFootage < 25000 }
-        case .medium:
-            filtered = filtered.filter { $0.squareFootage >= 25000 && $0.squareFootage < 50000 }
-        case .large:
-            filtered = filtered.filter { $0.squareFootage >= 50000 && $0.squareFootage < 100000 }
-        case .xlarge:
-            filtered = filtered.filter { $0.squareFootage >= 100000 }
-        case .all:
-            break
-        }
-        
-        // Clear height filter
-        switch clearHeightFilter {
-        case .low:
-            filtered = filtered.filter { $0.clearHeight < 24 }
-        case .medium:
-            filtered = filtered.filter { $0.clearHeight >= 24 && $0.clearHeight <= 32 }
-        case .high:
-            filtered = filtered.filter { $0.clearHeight > 32 }
-        case .all:
-            break
-        }
-        
-        // Rail access filter
-        if railAccessOnly {
-            filtered = filtered.filter { $0.railAccess }
-        }
-        
-        // Sort
-        switch sortBy {
-        case .dateAdded:
-            filtered = filtered.sorted { $0.dateAdded > $1.dateAdded }
-        case .size:
-            filtered = filtered.sorted { $0.squareFootage > $1.squareFootage }
-        case .rate:
-            filtered = filtered.sorted { $0.askingRate < $1.askingRate }
-        case .daysOnMarket:
-            filtered = filtered.sorted { $0.daysOnMarket > $1.daysOnMarket }
-        }
-        
-        return filtered
-    }
-    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
                 // Search Bar
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
-                        .font(.system(size: 16))
+                HStack {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.secondary)
+                        
+                        TextField("Search warehouses...", text: $searchText)
+                            .textFieldStyle(PlainTextFieldStyle())
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
                     
-                    TextField("Search warehouses...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .font(.subheadline)
+                    Button("Filters") {
+                        showingFilters = true
+                    }
+                    .foregroundColor(.accentColor)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Color(.systemGray6))
-                .cornerRadius(10)
-                .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
+                .padding(.horizontal)
+                .padding(.top, 8)
                 
                 // Properties List
                 if filteredProperties.isEmpty {
@@ -148,50 +73,38 @@ struct PropertiesView: View {
                         hasSearchTerm: !searchText.isEmpty,
                         onAddProperty: { showingAddProperty = true }
                     )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(filteredProperties) { property in
-                                PropertyRowView(property: property)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
+                    List {
+                        ForEach(filteredProperties, id: \.id) { property in
+                            PropertyRowView(property: property)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    selectedProperty = property
+                                }
+                                .swipeActions(edge: .trailing) {
+                                    Button("Edit") {
                                         selectedProperty = property
                                     }
-                                    .swipeActions(edge: .trailing) {
-                                        Button("Edit") {
-                                            selectedProperty = property
-                                        }
-                                        .tint(.blue)
-                                        
-                                        Button("Archive") {
-                                            archiveProperty(property)
-                                        }
-                                        .tint(.orange)
-                                        
-                                        Button("Delete", role: .destructive) {
-                                            dataManager.deleteProperty(property)
-                                        }
-                                        .tint(.red)
+                                    .tint(.blue)
+                                    
+                                    Button("Archive") {
+                                        archiveProperty(property)
                                     }
-                                    .accessibilityLabel("\(property.address), \(property.formattedSquareFootage), \(property.formattedClearHeight), \(property.status.rawValue)")
-                                    .accessibilityHint("Tap to edit warehouse details")
-                            }
+                                    .tint(.orange)
+                                    
+                                    Button("Delete", role: .destructive) {
+                                        dataManager.deleteProperty(property)
+                                    }
+                                    .tint(.red)
+                                }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
                     }
+                    .listStyle(.plain)
                 }
             }
             .navigationTitle("Warehouses")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { showingFilters = true }) {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                    }
-                }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddProperty = true }) {
                         Image(systemName: "plus")
@@ -209,9 +122,69 @@ struct PropertiesView: View {
             .sheet(isPresented: $showingAddProperty) {
                 AddEditPropertyView(property: nil)
             }
-        .sheet(item: $selectedProperty) { property in
-            AddEditPropertyView(property: property)
+            .sheet(item: $selectedProperty) { property in
+                AddEditPropertyView(property: property)
+            }
         }
+    }
+    
+    // MARK: - Computed Properties
+    private var filteredProperties: [Property] {
+        var properties = dataManager.properties
+        
+        // Apply search filter
+        if !searchText.isEmpty {
+            properties = properties.filter { property in
+                property.address.localizedCaseInsensitiveContains(searchText) ||
+                property.city.localizedCaseInsensitiveContains(searchText) ||
+                property.state.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+        
+        // Apply size filter
+        switch sizeFilter {
+        case .all:
+            break
+        case .small:
+            properties = properties.filter { $0.squareFootage < 50000 }
+        case .medium:
+            properties = properties.filter { $0.squareFootage >= 50000 && $0.squareFootage < 200000 }
+        case .large:
+            properties = properties.filter { $0.squareFootage >= 200000 && $0.squareFootage < 500000 }
+        case .xlarge:
+            properties = properties.filter { $0.squareFootage >= 500000 }
+        }
+        
+        // Apply clear height filter
+        switch clearHeightFilter {
+        case .all:
+            break
+        case .low:
+            properties = properties.filter { $0.clearHeight < 24.0 }
+        case .medium:
+            properties = properties.filter { $0.clearHeight >= 24.0 && $0.clearHeight <= 32.0 }
+        case .high:
+            properties = properties.filter { $0.clearHeight > 32.0 }
+        }
+        
+        // Apply rail access filter
+        if railAccessOnly {
+            properties = properties.filter { $0.railAccess }
+        }
+        
+        // Apply sorting
+        switch sortBy {
+        case .dateAdded:
+            properties = properties.sorted { $0.dateAdded > $1.dateAdded }
+        case .size:
+            properties = properties.sorted { $0.squareFootage > $1.squareFootage }
+        case .price:
+            properties = properties.sorted { $0.askingRate < $1.askingRate }
+        case .location:
+            properties = properties.sorted { $0.city < $1.city }
+        }
+        
+        return properties
     }
     
     // MARK: - Helper Functions
@@ -233,40 +206,44 @@ private struct EmptyWarehousesState: View {
     let onAddProperty: () -> Void
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 24) {
+            Spacer()
+            
             Image(systemName: "building.2")
-                .font(.system(size: 60))
+                .font(.system(size: 64))
                 .foregroundColor(.secondary)
             
-            Text(hasSearchTerm ? "No warehouses found" : "No warehouses yet")
-                .font(.title2)
-                .fontWeight(.medium)
-            
-            Text(hasSearchTerm ? "Try different search terms or filters" : "Add your first warehouse to start managing inventory")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            VStack(spacing: 8) {
+                Text(hasSearchTerm ? "No warehouses found" : "No warehouses yet")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                Text(hasSearchTerm ? "Try adjusting your search terms" : "Add your first warehouse to get started")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             
             if !hasSearchTerm {
                 Button("Add Warehouse") {
                     onAddProperty()
                 }
                 .buttonStyle(.borderedProminent)
-                .accessibilityHint("Creates a new warehouse listing")
             }
+            
+            Spacer()
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(hasSearchTerm ? "No warehouse search results" : "No warehouses available")
+        .padding()
     }
 }
 
-struct PropertyRowView: View {
+// MARK: - Property Row
+private struct PropertyRowView: View {
     let property: Property
     
     var body: some View {
-        VStack(spacing: 14) {
-            // Header Row
+        VStack(alignment: .leading, spacing: 8) {
+            // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(property.address)
@@ -283,113 +260,64 @@ struct PropertyRowView: View {
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 4) {
+                    Text("$\(property.askingRate, specifier: "%.2f")/SF")
+                        .font(.footnote)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
                     Text(property.status.rawValue)
                         .font(.caption)
-                        .fontWeight(.semibold)
                         .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(statusColor(for: property.status))
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                    
-                    Text("\(property.daysOnMarket) days")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .padding(.vertical, 2)
+                        .background(statusColor.opacity(0.2))
+                        .foregroundColor(statusColor)
+                        .cornerRadius(4)
                 }
             }
             
-            // Specs Row
-            HStack {
-                HStack(spacing: 20) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("SIZE")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Text(property.formattedSquareFootage)
-                            .font(.footnote)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("HEIGHT")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Text(property.formattedClearHeight)
-                            .font(.footnote)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("DOCKS")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Text("\(property.loadingDocks)")
-                            .font(.footnote)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    if property.railAccess {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("RAIL")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .fontWeight(.medium)
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.caption)
-                                .foregroundColor(.green)
-                        }
-                    }
+            // Specs
+            HStack(spacing: 16) {
+                SpecView(title: "SIZE", value: property.formattedSquareFootage, color: .blue)
+                SpecView(title: "HEIGHT", value: property.formattedClearHeight, color: .green)
+                SpecView(title: "DOCKS", value: "\(property.loadingDocks)", color: .orange)
+                
+                if property.railAccess {
+                    Image(systemName: "tram")
+                        .foregroundColor(.purple)
+                        .font(.caption)
                 }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(property.askingRate, format: .currency(code: "USD").precision(.fractionLength(2)))
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                    
-                    Text("per SF/Year")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            // Zoning and Availability
-            HStack {
-                Text(property.zoning.rawValue)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.gray.opacity(0.15))
-                    .cornerRadius(6)
-                
-                Spacer()
-                
-                Text("Available: \(property.availableDate.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Color(.systemBackground))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(.systemGray4), lineWidth: 1)
-        )
-        .cornerRadius(12)
+        .accessibilityLabel("\(property.address) in \(property.city), \(property.formattedSquareFootage), \(property.formattedClearHeight) clear height")
     }
     
-    private func statusColor(for status: PropertyStatus) -> Color {
-        switch status {
+    private var statusColor: Color {
+        switch property.status {
         case .available: return .green
-        case .underLOI: return .orange
-        case .leased: return .blue
-        case .offMarket: return .red
+        case .pending: return .orange
+        case .leased: return .red
+        }
+    }
+}
+
+// MARK: - Spec View
+private struct SpecView: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fontWeight(.medium)
+            Text(value)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(color)
         }
     }
 }
