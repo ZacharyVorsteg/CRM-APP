@@ -8,13 +8,6 @@
 import SwiftUI
 import UIKit
 
-// Import design system colors for consistency
-extension Color {
-    static let primaryBlue = Color(red: 0.118, green: 0.227, blue: 0.541) // #1E3A8A
-    static let secondaryEmerald = Color(red: 0.063, green: 0.725, blue: 0.506) // #10B981
-    static let warningAmber = Color(red: 0.961, green: 0.620, blue: 0.043) // #F59E0B
-}
-
 struct LeadsView: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var showingAddLead = false
@@ -73,13 +66,13 @@ struct LeadsView: View {
                                         hapticFeedback()
                                         markAsQualified(lead)
                                     }
-                                    .tint(.secondaryEmerald)
+                                    .tint(Color.secondaryEmerald)
                                     
                                     Button("Archive") {
                                         hapticFeedback()
                                         archiveProspect(lead)
                                     }
-                                    .tint(.warningAmber)
+                                    .tint(Color.warningAmber)
                                     
                                     Button("Delete", role: .destructive) {
                                         hapticFeedback()
@@ -413,10 +406,10 @@ struct LeadRowView: View {
                         Text(lead.formattedTotalBudget)
                             .font(.footnote)
                             .fontWeight(.bold)
-                            .foregroundColor(.warningAmber)
+                            .foregroundColor(Color.warningAmber)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2)
-                            .background(.warningAmber.opacity(0.15))
+                            .background(Color.warningAmber.opacity(0.15))
                             .clipShape(Capsule())
                     }
                     

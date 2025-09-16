@@ -16,7 +16,7 @@ struct DashboardView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 24) {
                     // Key Metrics Cards
                     LazyVGrid(columns: [

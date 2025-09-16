@@ -81,7 +81,7 @@ struct PropertiesView: View {
                         }) {
                             Image(systemName: "line.3.horizontal.decrease.circle")
                                 .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.primaryBlue)
+                                .foregroundColor(Color.primaryBlue)
                         }
                         .padding(8)
                         .background(.ultraThinMaterial)
@@ -114,14 +114,14 @@ struct PropertiesView: View {
                                                 let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                                                 impactFeedback.impactOccurred()
                                             }
-                                            .tint(.primaryBlue)
+                                            .tint(Color.primaryBlue)
                                             
                                             Button("Archive") {
                                                 archiveProperty(property)
                                                 let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                                                 impactFeedback.impactOccurred()
                                             }
-                                            .tint(.warningAmber)
+                                            .tint(Color.warningAmber)
                                             
                                             Button("Delete", role: .destructive) {
                                                 dataManager.deleteProperty(property)
@@ -142,7 +142,7 @@ struct PropertiesView: View {
             .navigationTitle("Warehouses")
             .navigationBarTitleDisplayMode(.large)
             .background(.ultraThinMaterial)
-            .toolbar {
+            .toolbar(content: {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { 
                         showingAddProperty = true
@@ -151,10 +151,10 @@ struct PropertiesView: View {
                     }) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(.primaryBlue)
+                            .foregroundColor(Color.primaryBlue)
                     }
                 }
-            }
+            })
             .sheet(isPresented: $showingFilters) {
                 PropertyFiltersView(
                     sizeFilter: $sizeFilter,
@@ -343,9 +343,9 @@ private struct PropertyRowView: View {
                 VStack(alignment: .trailing, spacing: 8) {
                     // Enhanced pricing display
                     Text("$\(Double(truncating: property.askingRate as NSNumber), specifier: "%.2f")")
-                        .font(.largeTitle)
+                        .font(Font.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundColor(.primaryBlue)
+                        .foregroundColor(Color.primaryBlue)
                     
                     Text("per SF/year")
                         .font(.caption)
@@ -371,21 +371,21 @@ private struct PropertyRowView: View {
                     title: "SIZE", 
                     value: property.formattedSquareFootage, 
                     icon: "square.grid.3x3",
-                    color: .secondaryEmerald
+                    color: Color.secondaryEmerald
                 )
                 
                 EnhancedSpecView(
                     title: "HEIGHT", 
                     value: property.formattedClearHeight, 
                     icon: "arrow.up.and.down",
-                    color: .primaryBlue
+                    color: Color.primaryBlue
                 )
                 
                 EnhancedSpecView(
                     title: "DOCKS", 
                     value: "\(property.loadingDocks)", 
                     icon: "truck.box",
-                    color: .warningAmber
+                    color: Color.warningAmber
                 )
                 
                 Spacer()
@@ -416,8 +416,8 @@ private struct PropertyRowView: View {
     
     private var statusColor: Color {
         switch property.status {
-        case .available: return .secondaryEmerald
-        case .underLOI: return .warningAmber
+        case .available: return Color.secondaryEmerald
+        case .underLOI: return Color.warningAmber
         case .leased: return .red
         case .offMarket: return .secondary
         }
