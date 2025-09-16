@@ -164,50 +164,22 @@ private struct QuickAddButton: View {
     let onLongPress: () -> Void
     let defaultType: String
     
-    private var buttonIcon: String {
-        return "plus.circle.fill"
-    }
-    
-    private var buttonLabel: String {
-        return "Quick Add"
-    }
-    
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 6) {
-                Image(systemName: buttonIcon)
-                    .font(.title)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor)
+                    .frame(width: 56, height: 56)
+                    .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
                 
-                Text(buttonLabel)
-                    .font(.caption)
+                Image(systemName: "plus")
+                    .font(.title2)
                     .fontWeight(.medium)
                     .foregroundColor(.white)
-                    .lineLimit(1)
             }
-            .frame(width: 64, height: 64)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .clipShape(Circle())
-            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
         }
-        .contentShape(Circle())
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.5)
-                .onEnded { _ in
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                    impactFeedback.impactOccurred()
-                    onLongPress()
-                }
-        )
-        .accessibilityLabel(buttonLabel)
-        .accessibilityHint("Tap to \(buttonLabel.lowercased()), long press for options")
+        .accessibilityLabel("Quick Add")
+        .accessibilityHint("Tap to add new prospect, warehouse, or lease")
     }
 }
 

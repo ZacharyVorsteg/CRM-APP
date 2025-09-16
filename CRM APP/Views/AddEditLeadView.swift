@@ -127,9 +127,10 @@ struct AddEditLeadView: View {
                             
                             Spacer()
                             
-                            Button(showAdvanced ? "Basic" : "Advanced") {
+                            Button(showAdvanced ? "✓ Basic" : "Advanced") {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showAdvanced.toggle()
+                                    print("DEBUG: showAdvanced is now \(showAdvanced)")
                                 }
                             }
                             .font(.footnote)
@@ -188,6 +189,10 @@ struct AddEditLeadView: View {
                 // Advanced Fields - Only show when toggled
                 if showAdvanced {
                     Section("Operational Details") {
+                        Text("DEBUG: Advanced mode is ON")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                            .padding(.vertical, 4)
                         Picker("Temperature Requirements", selection: $temperatureRequirements) {
                             ForEach(TemperatureRequirements.allCases, id: \.self) { temp in
                                 Text(temp.rawValue).tag(temp)
